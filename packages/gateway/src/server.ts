@@ -10,36 +10,10 @@ const issuer = process.env.JWT_ISSUER;
 const audience = process.env.JWT_AUDIENCE;
 const jwksUrl = process.env.JWT_JWKS_URL;
 const developmentToken = process.env.DEV_GATEWAY_TOKEN;
-const testerOrigin = process.env.TESTER_ORIGIN ?? "http://localhost:5173";
 
 const jwks = jwksUrl ? createRemoteJWKSet(new URL(jwksUrl)) : undefined;
 const jwtSettingsProvided = Boolean(jwksUrl || issuer || audience);
 const jwtAuthenticationConfigured = Boolean(jwks && issuer && audience);
-
-app.use((request, response, next) => {
-  const origin = request.header("origin");
-
-  if (origin !== testerOrigin) {
-    next();
-    return;
-  }
-
-  response.setHeader("Access-Control-Allow-Origin", testerOrigin);
-  response.setHeader("Vary", "Origin");
-  response.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  response.setHeader(
-    "Access-Control-Allow-Headers",
-    "Authorization, Content-Type",
-  );
-  response.setHeader("Access-Control-Max-Age", "600");
-
-  if (request.method === "OPTIONS") {
-    response.sendStatus(204);
-    return;
-  }
-
-  next();
-});
 
 app.get("/health", (_request, response) => {
   response.status(200).json({ service: "gateway", status: "ok" });
