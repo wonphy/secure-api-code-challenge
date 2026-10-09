@@ -11,7 +11,9 @@
       "lint:fix": "pnpm lint:fix",
       "format": "pnpm format",
       "check": "pnpm check",
-      "test": "pnpm test"
+      "test": "pnpm test",
+      "simulate": "docker compose up --build --force-recreate --remove-orphans",
+      "simulate:down": "docker compose down"
     }
   }
 }
