@@ -8,11 +8,12 @@
     "pnpm": ">=10"
   },
   "scripts": {
-    "dev": "pnpm --parallel --filter @secure-api/gateway --filter @secure-api/backend run dev",
+    "dev": "pnpm --parallel --filter @secure-api/gateway --filter @secure-api/backend --filter @secure-api/client run dev",
     "dev:gateway": "pnpm --filter @secure-api/gateway run dev",
     "dev:backend": "pnpm --filter @secure-api/backend run dev",
-    "build": "pnpm --filter @secure-api/gateway --filter @secure-api/backend -r run build",
-    "typecheck": "pnpm --filter @secure-api/gateway --filter @secure-api/backend -r run typecheck",
+    "dev:client": "pnpm --filter @secure-api/client run dev",
+    "build": "pnpm --filter @secure-api/gateway --filter @secure-api/backend --filter @secure-api/client -r run build",
+    "typecheck": "pnpm --filter @secure-api/gateway --filter @secure-api/backend --filter @secure-api/client -r run typecheck",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier . --write",

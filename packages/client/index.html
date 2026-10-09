@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Secure API test client</title>
+  </head>
+  <body>
+    <main>
+      <h1>Secure API test client</h1>
+      <p id="configuration-error" hidden></p>
+      <section id="signed-out">
+        <p>
+          Sign in with the configured OIDC provider to test the remote gateway.
+        </p>
+        <button id="sign-in" type="button">Sign in</button>
+      </section>
+      <section id="signed-in" hidden>
+        <p id="signed-in-message"></p>
+        <button id="call-users" type="button">Call GET /api/users</button>
+        <button id="sign-out" type="button">Clear local session</button>
+        <pre id="result" aria-live="polite"></pre>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

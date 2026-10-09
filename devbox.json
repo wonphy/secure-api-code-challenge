@@ -5,15 +5,14 @@
   },
   "shell": {
     "scripts": {
-      "dev": "pnpm dev",
-      "build": "pnpm build",
       "lint": "pnpm lint",
       "lint:fix": "pnpm lint:fix",
       "format": "pnpm format",
       "check": "pnpm check",
       "test": "pnpm test",
-      "simulate": "docker compose up --build --force-recreate --remove-orphans",
-      "simulate:down": "docker compose down"
+      "client": "pnpm dev:client",
+      "server": "docker compose up --build --force-recreate --remove-orphans",
+      "server:down": "docker compose down"
     }
   }
 }
