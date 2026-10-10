@@ -1,26 +1,29 @@
+import { decodeProtectedHeader } from "jose";
 import type express from "express";
-import { debugAuthentication } from "./auth-debug.js";
 import { sendAuthenticationFailure } from "./auth-errors.js";
 import type { JwtVerifier } from "./jwt-verifier.js";
+import type { GatewayLogger } from "../logging/gateway-logger.js";
 
 interface AuthenticationOptions {
   developmentToken?: string;
   developmentUser?: string;
-  logLevel: string;
+  logger: GatewayLogger;
   verifier?: JwtVerifier;
 }
 
 export function createAuthenticationMiddleware({
   developmentToken,
   developmentUser,
-  logLevel,
+  logger,
   verifier,
 }: AuthenticationOptions): express.RequestHandler {
   return async (request, response, next) => {
-    const token = request.header("authorization")?.replace(/^Bearer\s+/i, "");
+    const token = request
+      .header("authorization")
+      ?.match(/^Bearer\s+(.+)$/i)?.[1];
 
     if (!token) {
-      debugAuthentication(logLevel, request, "authentication_missing_token");
+      debugAuthentication(logger, request, "authentication_missing_token");
       response.status(401).json({ error: "missing bearer token" });
       return;
     }
@@ -32,7 +35,7 @@ export function createAuthenticationMiddleware({
         verifiedUser = await verifier.verify(token);
       } else if (!developmentToken || token !== developmentToken) {
         debugAuthentication(
-          logLevel,
+          logger,
           request,
           "authentication_not_configured",
           token,
@@ -46,7 +49,7 @@ export function createAuthenticationMiddleware({
       }
     } catch (error) {
       debugAuthentication(
-        logLevel,
+        logger,
         request,
         "authentication_invalid_token",
         token,
@@ -69,4 +72,38 @@ export function createAuthenticationMiddleware({
     response.locals.verifiedUser = verifiedUser;
     next();
   };
+}
+
+function debugAuthentication(
+  logger: GatewayLogger,
+  request: express.Request,
+  event: string,
+  token?: string,
+  error?: unknown,
+): void {
+  const details: Record<string, string | number | undefined> = {
+    event,
+    method: request.method,
+    path: request.originalUrl.split("?", 1)[0],
+    sourceIp: request.ip,
+  };
+
+  if (token) {
+    // Log token shape and protected-header metadata, never the bearer token or claims.
+    details.tokenSegments = token.split(".").length;
+
+    try {
+      const protectedHeader = decodeProtectedHeader(token);
+      details.tokenAlgorithm = protectedHeader.alg;
+      details.tokenEncryption = protectedHeader.enc;
+    } catch {
+      details.tokenHeader = "unreadable";
+    }
+  }
+
+  if (error instanceof Error) {
+    details.errorCategory = error.name;
+  }
+
+  logger.debug(details);
 }

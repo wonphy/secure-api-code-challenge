@@ -1,3 +1,9 @@
+import {
+  isLogLevel,
+  LOG_LEVELS,
+  type LogLevel,
+} from "../logging/gateway-logger.js";
+
 export interface JwtConfiguration {
   audience: string;
   issuer: string;
@@ -10,7 +16,7 @@ export interface GatewayConfiguration {
   developmentUser?: string;
   isDevelopment: boolean;
   jwt?: JwtConfiguration;
-  logLevel: string;
+  logLevel: LogLevel;
   port: number;
 }
 
@@ -27,6 +33,7 @@ export function loadConfiguration(
   const issuer = environment.JWT_ISSUER;
   const audience = environment.JWT_AUDIENCE;
   const jwtSettingsProvided = Boolean(jwksUrl || issuer || audience);
+  const logLevel = environment.LOG_LEVEL ?? "info";
   const jwt =
     jwksUrl && issuer && audience
       ? { audience, issuer, jwksUrl: new URL(jwksUrl) }
@@ -46,6 +53,10 @@ export function loadConfiguration(
     );
   }
 
+  if (!isLogLevel(logLevel)) {
+    throw new Error(`LOG_LEVEL must be one of: ${LOG_LEVELS.join(", ")}.`);
+  }
+
   return {
     backendUrl: environment.BACKEND_URL ?? "http://localhost:3001",
     developmentToken: isDevelopment ? environment.DEV_GATEWAY_TOKEN : undefined,
@@ -54,7 +65,7 @@ export function loadConfiguration(
       : undefined,
     isDevelopment,
     jwt,
-    logLevel: environment.LOG_LEVEL ?? "info",
+    logLevel,
     port,
   };
 }
