@@ -47,12 +47,13 @@ async function createAccessToken(
     audience?: string;
     expiresAt?: number;
     issuer?: string;
+    omitExpiration?: boolean;
     omitSubject?: boolean;
     permissions?: unknown;
     signingKey?: Awaited<ReturnType<typeof generateKeyPair>>["privateKey"];
   } = {},
 ): Promise<string> {
-  const token = new SignJWT(
+  let token = new SignJWT(
     overrides.permissions === undefined
       ? {}
       : { permissions: overrides.permissions },
@@ -60,8 +61,11 @@ async function createAccessToken(
     .setProtectedHeader({ alg: "RS256", kid: keyId })
     .setIssuer(overrides.issuer ?? issuer)
     .setAudience(overrides.audience ?? audience)
-    .setIssuedAt()
-    .setExpirationTime(overrides.expiresAt ?? "5m");
+    .setIssuedAt();
+
+  if (!overrides.omitExpiration) {
+    token = token.setExpirationTime(overrides.expiresAt ?? "5m");
+  }
 
   if (!overrides.omitSubject) {
     token.setSubject("oidc-user-123");
@@ -85,7 +89,7 @@ describe("OIDC JWT validation", () => {
     assert.equal(jwksRequests, requestsAfterPreload);
   });
 
-  it("rejects tokens with an unexpected audience, issuer, expired lifetime, or signature", async () => {
+  it("rejects tokens with an unexpected audience, issuer, missing or expired lifetime, or signature", async () => {
     const verifier = createJwtVerifier({ audience, issuer, jwksUrl });
     await verifier.preload();
 
@@ -102,6 +106,11 @@ describe("OIDC JWT validation", () => {
     await assert.rejects(() =>
       createAccessToken({ expiresAt: Math.floor(Date.now() / 1000) - 1 }).then(
         (token) => verifier.verify(token),
+      ),
+    );
+    await assert.rejects(() =>
+      createAccessToken({ omitExpiration: true }).then((token) =>
+        verifier.verify(token),
       ),
     );
     await assert.rejects(() =>

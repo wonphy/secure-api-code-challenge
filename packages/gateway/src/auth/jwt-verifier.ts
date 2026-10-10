@@ -23,6 +23,7 @@ export function createJwtVerifier(
       const { payload } = await jwtVerify(token, jwks, {
         audience: configuration.audience,
         issuer: configuration.issuer,
+        requiredClaims: ["exp"],
       });
       if (!payload.sub) {
         return undefined;
