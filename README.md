@@ -11,7 +11,7 @@ The workspace contains two independently deployable services:
 
 The gateway publishes port `3000`; the backend listens on `3001` only inside Docker
 Compose. Requests to `GET /api/users` require a bearer token and retain their path
-when proxied to the backend. For local Compose simulation, use `local-dev-token`.
+when proxied to the backend.
 
 ## Development
 
@@ -36,12 +36,33 @@ devbox run format    # apply Prettier formatting
 To simulate the deployment boundary locally:
 
 ```sh
+cp packages/gateway/.env.example packages/gateway/.env
+# Set JWT_JWKS_URL, JWT_ISSUER, and JWT_AUDIENCE for your OIDC provider.
 devbox run simulate
-curl -H 'Authorization: Bearer local-dev-token' http://localhost:3000/api/users
+curl -H 'Authorization: Bearer <access-token>' http://localhost:3000/api/users
 ```
 
 Stop the simulation with `Ctrl-C`, or remove its containers with `devbox run simulate:down`.
 
-Only use `DEV_GATEWAY_TOKEN` locally. Production configuration must provide
+Docker Compose loads `packages/gateway/.env` into the gateway container and overrides
+only `BACKEND_URL` with the Docker service address. `DEV_GATEWAY_TOKEN` is enabled
+only when `NODE_ENV=development`; it is ignored by the Compose image, which runs in
+production mode. Production configuration must provide
 `JWT_JWKS_URL`, `JWT_ISSUER`, and `JWT_AUDIENCE` so the gateway verifies bearer JWTs
-against the configured JWKS endpoint.
+against the configured JWKS endpoint. When JWT configuration is present, the gateway
+preloads its JWKS before listening; the container exits if configuration is incomplete
+or the configured JWKS cannot be retrieved.
+
+For short-lived authentication diagnostics, set `LOG_LEVEL=debug` in
+`packages/gateway/.env` and inspect the gateway container logs. Debug events include
+the token segment count, protected-header algorithm, and verification error category,
+but never the token or its claims.
+
+Authentication failures use safe, machine-readable response codes. For example, an
+expired token returns `401` with `error: "token_expired"` and a `WWW-Authenticate`
+header, while a wrong audience returns `error: "invalid_token_audience"`.
+
+After JWT verification, the gateway removes the bearer token and any client-supplied
+`X-Verified-User` value before proxying. It injects a replacement
+`X-Verified-User` value derived from the verified token subject (or email). The
+backend accepts `/api/users` requests only when this trusted header is present.
