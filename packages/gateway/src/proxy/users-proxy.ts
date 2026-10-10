@@ -1,5 +1,10 @@
 import type express from "express";
-import { type ClientRequest, ServerResponse } from "node:http";
+import {
+  type ClientRequest,
+  type IncomingMessage,
+  ServerResponse,
+} from "node:http";
+import type { Socket } from "node:net";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import type { GatewayLogger } from "../logging/gateway-logger.js";
 
@@ -13,7 +18,11 @@ export function createUsersProxy(
     changeOrigin: true,
     selfHandleResponse: true,
     on: {
-      error: (error, request, response) => {
+      error: (
+        _error: Error,
+        request: express.Request,
+        response: express.Response | Socket,
+      ) => {
         if (!(response instanceof ServerResponse) || response.headersSent) {
           return;
         }
@@ -29,7 +38,11 @@ export function createUsersProxy(
         response.writeHead(500, { "content-type": "application/json" });
         response.end(JSON.stringify({ error: "internal_server_error" }));
       },
-      proxyRes: (backendResponse, _request, response) => {
+      proxyRes: (
+        backendResponse: IncomingMessage,
+        _request: express.Request,
+        response: express.Response,
+      ) => {
         if (backendResponse.statusCode && backendResponse.statusCode >= 500) {
           // Do not forward a backend error body, which might include implementation details.
           backendResponse.resume();
@@ -48,11 +61,12 @@ export function createUsersProxy(
         _request: express.Request,
         response: express.Response,
       ) => {
-        const { verifiedUser } = response.locals;
+        const { verifiedUser, verifiedUserPermissions } = response.locals;
 
-        // Make this header a gateway assertion: discard caller credentials and spoofed identity.
+        // Make these headers gateway assertions: discard caller credentials and spoofed values.
         proxyRequest.removeHeader("authorization");
         proxyRequest.removeHeader("x-verified-user");
+        proxyRequest.removeHeader("x-verified-user-permissions");
 
         if (!verifiedUser) {
           proxyRequest.destroy(
@@ -62,6 +76,10 @@ export function createUsersProxy(
         }
 
         proxyRequest.setHeader("x-verified-user", verifiedUser);
+        proxyRequest.setHeader(
+          "x-verified-user-permissions",
+          JSON.stringify(verifiedUserPermissions),
+        );
       },
     },
   });

@@ -11,7 +11,7 @@ See [SPEC.md](SPEC.md) for the gateway's security, logging, error-handling, and 
 - Validate the access token signature, expiry, issuer, and audience against the OIDC provider's JWKS.
 - Preload the JWKS during startup so an unavailable identity provider prevents the gateway from becoming ready.
 - Return safe, actionable authentication errors (`token_expired`, `invalid_token_audience`, and so on); optional debug logging records metadata without logging tokens.
-- Remove inbound `Authorization` and `X-Verified-User` headers, then inject the verified user identity for the backend.
+- Remove inbound `Authorization`, `X-Verified-User`, and `X-Verified-User-Permissions` headers, then inject the verified user identity and access-token permissions for the backend. `X-Verified-User-Permissions` is a JSON string array.
 - Write JSON request-completion logs with timestamp, method, path, source IP, response status, and verified user ID when available.
 - Expose `GET /health` without authentication and proxy protected `/api/users` requests.
 

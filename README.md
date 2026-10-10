@@ -63,6 +63,8 @@ expired token returns `401` with `error: "token_expired"` and a `WWW-Authenticat
 header, while a wrong audience returns `error: "invalid_token_audience"`.
 
 After JWT verification, the gateway removes the bearer token and any client-supplied
-`X-Verified-User` value before proxying. It injects a replacement
-`X-Verified-User` value derived from the verified token subject (or email). The
-backend accepts `/api/users` requests only when this trusted header is present.
+`X-Verified-User` or `X-Verified-User-Permissions` values before proxying. It injects
+the verified subject as `X-Verified-User` and the verified access-token `permissions`
+claim as `X-Verified-User-Permissions`. The permissions header is a JSON string array,
+such as `["users:read"]`; an absent or unusable claim is `[]`. The backend can use
+these trusted gateway assertions for authorization.

@@ -1,7 +1,7 @@
 import { decodeProtectedHeader } from "jose";
 import type express from "express";
 import { sendAuthenticationFailure } from "./auth-errors.js";
-import type { JwtVerifier } from "./jwt-verifier.js";
+import type { JwtVerifier, VerifiedIdentity } from "./jwt-verifier.js";
 import type { GatewayLogger } from "../logging/gateway-logger.js";
 
 interface AuthenticationOptions {
@@ -17,7 +17,11 @@ export function createAuthenticationMiddleware({
   logger,
   verifier,
 }: AuthenticationOptions): express.RequestHandler {
-  return async (request, response, next) => {
+  return async (
+    request: express.Request,
+    response: express.Response,
+    next: express.NextFunction,
+  ) => {
     const token = request
       .header("authorization")
       ?.match(/^Bearer\s+(.+)$/i)?.[1];
@@ -28,11 +32,11 @@ export function createAuthenticationMiddleware({
       return;
     }
 
-    let verifiedUser: string | undefined;
+    let verifiedIdentity: VerifiedIdentity | undefined;
 
     try {
       if (verifier) {
-        verifiedUser = await verifier.verify(token);
+        verifiedIdentity = await verifier.verify(token);
       } else if (!developmentToken || token !== developmentToken) {
         debugAuthentication(
           logger,
@@ -45,7 +49,9 @@ export function createAuthenticationMiddleware({
           .json({ error: "gateway authentication is not configured" });
         return;
       } else {
-        verifiedUser = developmentUser;
+        verifiedIdentity = developmentUser
+          ? { userId: developmentUser, permissions: [] }
+          : undefined;
       }
     } catch (error) {
       debugAuthentication(
@@ -59,7 +65,13 @@ export function createAuthenticationMiddleware({
       return;
     }
 
-    if (!verifiedUser) {
+    if (!verifiedIdentity) {
+      debugAuthentication(
+        logger,
+        request,
+        "authentication_identity_missing",
+        token,
+      );
       response.setHeader("WWW-Authenticate", 'Bearer error="invalid_token"');
       response.status(401).json({
         error: "token_identity_missing",
@@ -68,8 +80,9 @@ export function createAuthenticationMiddleware({
       return;
     }
 
-    // Preserve the trusted identity until the proxy injects it at the backend boundary.
-    response.locals.verifiedUser = verifiedUser;
+    // Preserve gateway-verified assertions until the proxy injects them at the backend boundary.
+    response.locals.verifiedUser = verifiedIdentity.userId;
+    response.locals.verifiedUserPermissions = verifiedIdentity.permissions;
     next();
   };
 }

@@ -56,7 +56,7 @@ describe("zero-trust request flow", () => {
       preload: async () => undefined,
       verify: async () => {
         verifyCalls += 1;
-        return "verified-user-123";
+        return { userId: "verified-user-123", permissions: [] };
       },
     };
     const gateway = await listen(
@@ -184,7 +184,7 @@ describe("zero-trust request flow", () => {
     );
     const verifier: JwtVerifier = {
       preload: async () => undefined,
-      verify: async () => "verified-user-123",
+      verify: async () => ({ userId: "verified-user-123", permissions: [] }),
     };
     const gateway = await listen(
       createServer(createApp(configuration(backend), verifier)),
@@ -206,7 +206,7 @@ describe("zero-trust request flow", () => {
     const events: Record<string, unknown>[] = [];
     const verifier: JwtVerifier = {
       preload: async () => undefined,
-      verify: async () => "verified-user-123",
+      verify: async () => ({ userId: "verified-user-123", permissions: [] }),
     };
     const gateway = await listen(
       createServer(
@@ -244,7 +244,10 @@ describe("zero-trust request flow", () => {
     );
     const verifier: JwtVerifier = {
       preload: async () => undefined,
-      verify: async () => "verified-user-123",
+      verify: async () => ({
+        userId: "verified-user-123",
+        permissions: ["users:read", "users:write"],
+      }),
     };
     const gateway = await listen(
       createServer(createApp(configuration(backend), verifier)),
@@ -262,6 +265,7 @@ describe("zero-trust request flow", () => {
         headers: {
           authorization: "Bearer user-access-token",
           "x-verified-user": "attacker-controlled-value",
+          "x-verified-user-permissions": '["attacker:admin"]',
         },
       });
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -272,6 +276,10 @@ describe("zero-trust request flow", () => {
     assert.equal(response.status, 200);
     assert.equal(receivedHeaders?.authorization, undefined);
     assert.equal(receivedHeaders?.["x-verified-user"], "verified-user-123");
+    assert.equal(
+      receivedHeaders?.["x-verified-user-permissions"],
+      '["users:read","users:write"]',
+    );
     const requestLog = logLines
       .map((line) => JSON.parse(line) as Record<string, unknown>)
       .find((entry) => entry.event === "request_completed");

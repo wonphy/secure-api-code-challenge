@@ -48,10 +48,15 @@ async function createAccessToken(
     expiresAt?: number;
     issuer?: string;
     omitSubject?: boolean;
+    permissions?: unknown;
     signingKey?: Awaited<ReturnType<typeof generateKeyPair>>["privateKey"];
   } = {},
 ): Promise<string> {
-  const token = new SignJWT({})
+  const token = new SignJWT(
+    overrides.permissions === undefined
+      ? {}
+      : { permissions: overrides.permissions },
+  )
     .setProtectedHeader({ alg: "RS256", kid: keyId })
     .setIssuer(overrides.issuer ?? issuer)
     .setAudience(overrides.audience ?? audience)
@@ -72,10 +77,10 @@ describe("OIDC JWT validation", () => {
     await verifier.preload();
     const requestsAfterPreload = jwksRequests;
 
-    assert.equal(
-      await verifier.verify(await createAccessToken()),
-      "oidc-user-123",
-    );
+    assert.deepEqual(await verifier.verify(await createAccessToken()), {
+      userId: "oidc-user-123",
+      permissions: [],
+    });
     assert.equal(requestsAfterPreload, requestsBeforePreload + 1);
     assert.equal(jwksRequests, requestsAfterPreload);
   });
@@ -113,6 +118,35 @@ describe("OIDC JWT validation", () => {
     assert.equal(
       await verifier.verify(await createAccessToken({ omitSubject: true })),
       undefined,
+    );
+  });
+
+  it("returns the verified permissions claim", async () => {
+    const verifier = createJwtVerifier({ audience, issuer, jwksUrl });
+    await verifier.preload();
+
+    assert.deepEqual(
+      await verifier.verify(
+        await createAccessToken({
+          permissions: ["users:read", "users:write"],
+        }),
+      ),
+      {
+        userId: "oidc-user-123",
+        permissions: ["users:read", "users:write"],
+      },
+    );
+  });
+
+  it("uses an empty permission list when the claim is unusable", async () => {
+    const verifier = createJwtVerifier({ audience, issuer, jwksUrl });
+    await verifier.preload();
+
+    assert.deepEqual(
+      await verifier.verify(
+        await createAccessToken({ permissions: ["users:read", 1] }),
+      ),
+      { userId: "oidc-user-123", permissions: [] },
     );
   });
 
