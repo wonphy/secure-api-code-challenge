@@ -53,6 +53,11 @@ against the configured JWKS endpoint. When JWT configuration is present, the gat
 preloads its JWKS before listening; the container exits if configuration is incomplete
 or the configured JWKS cannot be retrieved.
 
+Outside development, `JWT_JWKS_URL` must use HTTPS and `BACKEND_ALLOWED_HOSTS` must
+contain the exact internal hostname from `BACKEND_URL`. Set
+`JWT_ALLOWED_ALGORITHMS=RS256` for a standard Auth0 API, or choose from the documented
+asymmetric allowlist when the IdP is deliberately configured differently.
+
 For short-lived authentication diagnostics, set `LOG_LEVEL=debug` in
 `packages/gateway/.env` and inspect the gateway container logs. Debug events include
 the token segment count, protected-header algorithm, and verification error category,

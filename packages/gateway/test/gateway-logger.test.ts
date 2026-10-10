@@ -46,3 +46,42 @@ test("gateway rejects unsupported log levels at startup", () => {
     /LOG_LEVEL must be one of: debug, info, warn, error/,
   );
 });
+
+test("gateway validates production network and JWT algorithm configuration", () => {
+  const productionEnvironment = {
+    BACKEND_ALLOWED_HOSTS: "users-api.internal.example",
+    BACKEND_URL: "http://users-api.internal.example:3001",
+    JWT_AUDIENCE: "secure-api",
+    JWT_ISSUER: "https://issuer.example.test/",
+    JWT_JWKS_URL: "https://issuer.example.test/.well-known/jwks.json",
+    NODE_ENV: "production",
+  };
+
+  const configuration = loadConfiguration(productionEnvironment);
+  assert.deepEqual(configuration.jwt?.algorithms, ["RS256"]);
+
+  assert.throws(
+    () =>
+      loadConfiguration({
+        ...productionEnvironment,
+        JWT_JWKS_URL: "http://issuer.example.test/.well-known/jwks.json",
+      }),
+    /JWT_JWKS_URL must use HTTPS outside development mode/,
+  );
+  assert.throws(
+    () =>
+      loadConfiguration({
+        ...productionEnvironment,
+        BACKEND_URL: "http://unapproved.example.test:3001",
+      }),
+    /BACKEND_URL hostname is not in BACKEND_ALLOWED_HOSTS/,
+  );
+  assert.throws(
+    () =>
+      loadConfiguration({
+        ...productionEnvironment,
+        JWT_ALLOWED_ALGORITHMS: "HS256",
+      }),
+    /JWT_ALLOWED_ALGORITHMS must contain only/,
+  );
+});

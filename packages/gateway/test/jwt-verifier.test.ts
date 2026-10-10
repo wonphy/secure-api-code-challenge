@@ -79,9 +79,18 @@ async function createAccessToken(
   return token.sign(overrides.signingKey ?? privateKey);
 }
 
+function createDefaultVerifier(jwksEndpoint = jwksUrl) {
+  return createJwtVerifier({
+    algorithms: ["RS256"],
+    audience,
+    issuer,
+    jwksUrl: jwksEndpoint,
+  });
+}
+
 describe("OIDC JWT validation", () => {
   it("accepts a correctly signed access token from the mocked OIDC provider", async () => {
-    const verifier = createJwtVerifier({ audience, issuer, jwksUrl });
+    const verifier = createDefaultVerifier();
     const requestsBeforePreload = jwksRequests;
     await verifier.preload();
     const requestsAfterPreload = jwksRequests;
@@ -95,7 +104,7 @@ describe("OIDC JWT validation", () => {
   });
 
   it("rejects tokens with an unexpected audience, issuer, missing or expired lifetime, or signature", async () => {
-    const verifier = createJwtVerifier({ audience, issuer, jwksUrl });
+    const verifier = createDefaultVerifier();
     await verifier.preload();
 
     await assert.rejects(() =>
@@ -126,7 +135,7 @@ describe("OIDC JWT validation", () => {
   });
 
   it("uses verified email when a valid access token has no subject", async () => {
-    const verifier = createJwtVerifier({ audience, issuer, jwksUrl });
+    const verifier = createDefaultVerifier();
     await verifier.preload();
 
     assert.deepEqual(
@@ -141,7 +150,7 @@ describe("OIDC JWT validation", () => {
   });
 
   it("returns no identity when a valid access token has no usable subject or email", async () => {
-    const verifier = createJwtVerifier({ audience, issuer, jwksUrl });
+    const verifier = createDefaultVerifier();
     await verifier.preload();
 
     assert.equal(
@@ -153,7 +162,7 @@ describe("OIDC JWT validation", () => {
   });
 
   it("returns the verified permissions claim", async () => {
-    const verifier = createJwtVerifier({ audience, issuer, jwksUrl });
+    const verifier = createDefaultVerifier();
     await verifier.preload();
 
     assert.deepEqual(
@@ -170,7 +179,7 @@ describe("OIDC JWT validation", () => {
   });
 
   it("uses an empty permission list when the claim is unusable", async () => {
-    const verifier = createJwtVerifier({ audience, issuer, jwksUrl });
+    const verifier = createDefaultVerifier();
     await verifier.preload();
 
     assert.deepEqual(
@@ -194,11 +203,7 @@ describe("OIDC JWT validation", () => {
     const unavailableJwksUrl = new URL(
       `http://127.0.0.1:${address.port}/.well-known/jwks.json`,
     );
-    const verifier = createJwtVerifier({
-      audience,
-      issuer,
-      jwksUrl: unavailableJwksUrl,
-    });
+    const verifier = createDefaultVerifier(unavailableJwksUrl);
 
     try {
       await assert.rejects(() => verifier.preload());

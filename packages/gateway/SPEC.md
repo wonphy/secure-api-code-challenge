@@ -71,8 +71,9 @@ Client responses must never contain stack traces or raw internal error messages.
 
 - `JWT_JWKS_URL`, `JWT_ISSUER`, and `JWT_AUDIENCE` are all required outside `NODE_ENV=development`.
 - Partial JWT configuration is invalid and prevents startup.
+- `JWT_JWKS_URL` must use HTTPS outside development, and `JWT_ALLOWED_ALGORITHMS` defaults to `RS256` from a validated asymmetric allowlist.
 - `DEV_GATEWAY_TOKEN` and `DEV_GATEWAY_USER` apply only in development.
-- `BACKEND_URL` must identify an internal backend endpoint in deployed environments.
+- `BACKEND_URL` must use HTTP(S), contain no embedded credentials, and exactly match a hostname in `BACKEND_ALLOWED_HOSTS` outside development.
 - `LOG_LEVEL` must be one of the supported values.
 
 ## Review checklist

@@ -22,20 +22,25 @@ API client -> gateway -> backend (internal only)
 
 ## Configuration
 
-| Variable            | Purpose                                                    | Default                      |
-| ------------------- | ---------------------------------------------------------- | ---------------------------- |
-| `PORT`              | Gateway listen port                                        | `3000`                       |
-| `BACKEND_URL`       | Internal backend base URL                                  | `http://localhost:3001`      |
-| `JWT_JWKS_URL`      | OIDC provider JWKS endpoint                                | required outside development |
-| `JWT_ISSUER`        | Expected access-token issuer                               | required outside development |
-| `JWT_AUDIENCE`      | Expected access-token audience                             | required outside development |
-| `LOG_LEVEL`         | Minimum emitted level: `debug`, `info`, `warn`, or `error` | `info`                       |
-| `DEV_GATEWAY_TOKEN` | Local token fallback                                       | development only             |
-| `DEV_GATEWAY_USER`  | Identity sent for the local fallback                       | `local-dev-user`             |
+| Variable                 | Purpose                                                                         | Default                      |
+| ------------------------ | ------------------------------------------------------------------------------- | ---------------------------- |
+| `PORT`                   | Gateway listen port                                                             | `3000`                       |
+| `BACKEND_URL`            | Internal backend base URL                                                       | `http://localhost:3001`      |
+| `BACKEND_ALLOWED_HOSTS`  | Exact internal backend hostnames, comma-separated; required outside development | required outside development |
+| `JWT_JWKS_URL`           | OIDC provider JWKS endpoint                                                     | required outside development |
+| `JWT_ISSUER`             | Expected access-token issuer                                                    | required outside development |
+| `JWT_AUDIENCE`           | Expected access-token audience                                                  | required outside development |
+| `JWT_ALLOWED_ALGORITHMS` | Approved asymmetric JWT signing algorithms, comma-separated                     | `RS256`                      |
+| `LOG_LEVEL`              | Minimum emitted level: `debug`, `info`, `warn`, or `error`                      | `info`                       |
+| `DEV_GATEWAY_TOKEN`      | Local token fallback                                                            | development only             |
+| `DEV_GATEWAY_USER`       | Identity sent for the local fallback                                            | `local-dev-user`             |
 
 JWT settings are required unless `NODE_ENV=development`. A partial JWT
-configuration is rejected at startup. Root-level documentation covers local
-configuration and deployment.
+configuration is rejected at startup. Outside development, the JWKS endpoint
+must use HTTPS and the backend URL hostname must exactly match
+`BACKEND_ALLOWED_HOSTS`. `RS256` is the default Auth0-compatible signing
+algorithm; only approved asymmetric algorithms can be configured. Root-level
+documentation covers local configuration and deployment.
 
 `info` logs successful requests and lifecycle events. `warn` retains client and authentication failures while suppressing successful-request logs; `error` retains unexpected and proxy failures only. `debug` additionally emits safe JWT diagnostics.
 

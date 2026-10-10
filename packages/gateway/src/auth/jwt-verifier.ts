@@ -21,6 +21,7 @@ export function createJwtVerifier(
     preload: async () => jwks.reload(),
     verify: async (token) => {
       const { payload } = await jwtVerify(token, jwks, {
+        algorithms: configuration.algorithms,
         audience: configuration.audience,
         issuer: configuration.issuer,
         requiredClaims: ["exp"],
