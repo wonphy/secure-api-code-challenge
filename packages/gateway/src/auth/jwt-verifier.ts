@@ -25,7 +25,11 @@ export function createJwtVerifier(
         issuer: configuration.issuer,
         requiredClaims: ["exp"],
       });
-      if (!payload.sub) {
+      // `sub` is the stable OIDC identifier. Email is a verified fallback for
+      // providers that include it in access tokens; no identity is asserted
+      // when neither claim is usable.
+      const userId = firstNonEmptyString(payload.sub, payload.email);
+      if (!userId) {
         return undefined;
       }
 
@@ -35,9 +39,19 @@ export function createJwtVerifier(
         ? payload.permissions
         : [];
 
-      return { userId: payload.sub, permissions };
+      return { userId, permissions };
     },
   };
+}
+
+function firstNonEmptyString(...values: unknown[]): string | undefined {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+
+  return undefined;
 }
 
 function isStringArray(value: unknown): value is string[] {

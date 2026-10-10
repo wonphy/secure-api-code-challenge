@@ -45,6 +45,7 @@ after(async () => closeServer());
 async function createAccessToken(
   overrides: {
     audience?: string;
+    email?: unknown;
     expiresAt?: number;
     issuer?: string;
     omitExpiration?: boolean;
@@ -53,11 +54,15 @@ async function createAccessToken(
     signingKey?: Awaited<ReturnType<typeof generateKeyPair>>["privateKey"];
   } = {},
 ): Promise<string> {
-  let token = new SignJWT(
-    overrides.permissions === undefined
-      ? {}
-      : { permissions: overrides.permissions },
-  )
+  const claims: Record<string, unknown> = {};
+  if (overrides.permissions !== undefined) {
+    claims.permissions = overrides.permissions;
+  }
+  if (overrides.email !== undefined) {
+    claims.email = overrides.email;
+  }
+
+  let token = new SignJWT(claims)
     .setProtectedHeader({ alg: "RS256", kid: keyId })
     .setIssuer(overrides.issuer ?? issuer)
     .setAudience(overrides.audience ?? audience)
@@ -120,12 +125,29 @@ describe("OIDC JWT validation", () => {
     );
   });
 
-  it("returns no identity when a valid access token has no subject", async () => {
+  it("uses verified email when a valid access token has no subject", async () => {
+    const verifier = createJwtVerifier({ audience, issuer, jwksUrl });
+    await verifier.preload();
+
+    assert.deepEqual(
+      await verifier.verify(
+        await createAccessToken({
+          email: "  user@example.test  ",
+          omitSubject: true,
+        }),
+      ),
+      { userId: "user@example.test", permissions: [] },
+    );
+  });
+
+  it("returns no identity when a valid access token has no usable subject or email", async () => {
     const verifier = createJwtVerifier({ audience, issuer, jwksUrl });
     await verifier.preload();
 
     assert.equal(
-      await verifier.verify(await createAccessToken({ omitSubject: true })),
+      await verifier.verify(
+        await createAccessToken({ email: " ", omitSubject: true }),
+      ),
       undefined,
     );
   });
