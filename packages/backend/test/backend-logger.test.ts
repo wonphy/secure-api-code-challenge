@@ -1,0 +1,42 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { createBackendLogger } from "../src/logging/backend-logger.js";
+
+test("backend logger honours its configured minimum level", () => {
+  const entries: string[] = [];
+  const originalInfo = console.info;
+  const originalWarn = console.warn;
+  const originalError = console.error;
+  console.info = (message?: unknown): void => {
+    entries.push(String(message));
+  };
+  console.warn = (message?: unknown): void => {
+    entries.push(String(message));
+  };
+  console.error = (message?: unknown): void => {
+    entries.push(String(message));
+  };
+
+  try {
+    const logger = createBackendLogger("warn");
+    logger.debug({ event: "debug_event" });
+    logger.info({ event: "info_event" });
+    logger.warn({ event: "warning_event" });
+    logger.error({ event: "error_event" });
+  } finally {
+    console.info = originalInfo;
+    console.warn = originalWarn;
+    console.error = originalError;
+  }
+
+  assert.equal(entries.length, 2);
+  const [warning, error] = entries.map(
+    (entry) => JSON.parse(entry) as Record<string, unknown>,
+  );
+  assert.equal(warning.event, "warning_event");
+  assert.equal(warning.level, "warn");
+  assert.equal(error.event, "error_event");
+  assert.equal(error.level, "error");
+  assert.equal(typeof warning.timestamp, "string");
+  assert.equal(typeof error.timestamp, "string");
+});

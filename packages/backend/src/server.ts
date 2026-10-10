@@ -1,29 +1,11 @@
-import express from "express";
+import { createApp } from "./app.js";
+import { loadConfiguration } from "./config/environment.js";
+import { createBackendLogger } from "./logging/backend-logger.js";
 
-const app = express();
-const port = Number.parseInt(process.env.PORT ?? "3001", 10);
+const configuration = loadConfiguration();
+const logger = createBackendLogger(configuration.logLevel);
+const app = createApp(configuration, logger);
 
-app.get("/health", (_request, response) => {
-  response.status(200).json({ service: "backend", status: "ok" });
-});
-
-app.get("/api/v1/status", (_request, response) => {
-  response.status(200).json({ status: "ok" });
-});
-
-app.use("/api/users", (request, response, next) => {
-  if (!request.header("x-verified-user")) {
-    response.status(403).json({ error: "verified user header is required" });
-    return;
-  }
-
-  next();
-});
-
-app.get("/api/users", (_request, response) => {
-  response.status(200).json({ users: [] });
-});
-
-app.listen(port, () => {
-  console.log(`Backend listening on http://localhost:${port}`);
+app.listen(configuration.port, () => {
+  logger.info({ event: "backend_listening", port: configuration.port });
 });

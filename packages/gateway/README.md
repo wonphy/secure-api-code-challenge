@@ -33,7 +33,9 @@ API client -> gateway -> backend (internal only)
 | `DEV_GATEWAY_TOKEN` | Local token fallback                                       | development only             |
 | `DEV_GATEWAY_USER`  | Identity sent for the local fallback                       | `local-dev-user`             |
 
-Copy [`.env.example`](.env.example) to `.env` and supply the OIDC values. The root Compose configuration loads `packages/gateway/.env`; a standalone process must receive these variables from its shell or process manager. JWT settings are required unless `NODE_ENV=development`. A partial JWT configuration is rejected at startup.
+JWT settings are required unless `NODE_ENV=development`. A partial JWT
+configuration is rejected at startup. Root-level documentation covers local
+configuration and deployment.
 
 `info` logs successful requests and lifecycle events. `warn` retains client and authentication failures while suppressing successful-request logs; `error` retains unexpected and proxy failures only. `debug` additionally emits safe JWT diagnostics.
 
@@ -58,7 +60,3 @@ src/
 The backend must reject a request that lacks `X-Verified-User`; that provides the second half of the zero-trust flow if it is accidentally exposed directly.
 
 The gateway does not make authorization decisions. The backend is responsible for determining whether the verified user may perform an operation and for returning domain-level `403` responses. The gateway returns safe JSON `400`, `401`, `404`, and `500` transport errors without exposing stack traces. It also replaces backend `5xx` response bodies with its safe `500` response.
-
-## Tests
-
-Run the gateway tests with `pnpm --filter @secure-api/gateway test`. They use a local mocked OIDC JWKS endpoint to verify valid, expired, and wrong-audience JWT handling. They also confirm that the gateway blocks requests without a bearer token and replaces caller-supplied identity headers before proxying.
