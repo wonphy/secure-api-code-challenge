@@ -49,3 +49,22 @@ test("backend defaults to identity-only authorization and rejects an invalid mod
     /AUTHORIZATION_MODE must be one of: identity-only, permissions/,
   );
 });
+
+test("backend requires certificate paths when mTLS mode is enabled", () => {
+  const configuration = loadConfiguration({
+    BACKEND_TLS_MODE: "mtls",
+    TLS_CA_CERT_PATH: "/certs/ca.crt",
+    TLS_SERVER_CERT_PATH: "/certs/backend.crt",
+    TLS_SERVER_KEY_PATH: "/certs/backend.key",
+  });
+  assert.deepEqual(configuration.mutualTls, {
+    caCertificatePath: "/certs/ca.crt",
+    expectedClientCommonName: "gateway",
+    serverCertificatePath: "/certs/backend.crt",
+    serverKeyPath: "/certs/backend.key",
+  });
+  assert.throws(
+    () => loadConfiguration({ BACKEND_TLS_MODE: "mtls" }),
+    /TLS_CA_CERT_PATH is required when BACKEND_TLS_MODE=mtls/,
+  );
+});

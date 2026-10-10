@@ -101,3 +101,29 @@ test("gateway validates production network and JWT algorithm configuration", () 
     /JWT_ALLOWED_ALGORITHMS must contain only/,
   );
 });
+
+test("gateway requires complete mTLS configuration for an HTTPS backend", () => {
+  const configuration = loadConfiguration({
+    BACKEND_TLS_MODE: "mtls",
+    BACKEND_URL: "https://backend.example.test:3001",
+    NODE_ENV: "development",
+    TLS_CA_CERT_PATH: "/certs/ca.crt",
+    TLS_CLIENT_CERT_PATH: "/certs/gateway.crt",
+    TLS_CLIENT_KEY_PATH: "/certs/gateway.key",
+  });
+
+  assert.deepEqual(configuration.backendMutualTls, {
+    caCertificatePath: "/certs/ca.crt",
+    clientCertificatePath: "/certs/gateway.crt",
+    clientKeyPath: "/certs/gateway.key",
+  });
+  assert.throws(
+    () =>
+      loadConfiguration({
+        BACKEND_TLS_MODE: "mtls",
+        BACKEND_URL: "http://backend.example.test:3001",
+        NODE_ENV: "development",
+      }),
+    /BACKEND_URL must use HTTPS when BACKEND_TLS_MODE=mtls/,
+  );
+});

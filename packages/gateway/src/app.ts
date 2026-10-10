@@ -36,7 +36,13 @@ export function createApp(
       verifier,
     }),
   );
-  app.use(createUsersProxy(configuration.backendUrl, logger));
+  app.use(
+    createUsersProxy(
+      configuration.backendUrl,
+      logger,
+      configuration.backendMutualTls,
+    ),
+  );
   app.use(notFoundHandler);
   app.use(createGatewayErrorHandler(logger));
 

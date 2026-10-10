@@ -7,5 +7,6 @@ dist
 !.env.example
 .git
 .devbox
+.local
 .pnpm-store
 coverage

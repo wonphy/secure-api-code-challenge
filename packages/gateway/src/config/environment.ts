@@ -12,6 +12,12 @@ export interface JwtConfiguration {
   jwksUrl: URL;
 }
 
+export interface BackendMutualTlsConfiguration {
+  caCertificatePath: string;
+  clientCertificatePath: string;
+  clientKeyPath: string;
+}
+
 const SUPPORTED_JWT_ALGORITHMS = [
   "RS256",
   "RS384",
@@ -27,6 +33,7 @@ const SUPPORTED_JWT_ALGORITHMS = [
 
 export interface GatewayConfiguration {
   backendUrl: string;
+  backendMutualTls?: BackendMutualTlsConfiguration;
   developmentToken?: string;
   developmentUser?: string;
   isDevelopment: boolean;
@@ -52,6 +59,12 @@ export function loadConfiguration(
   const backendUrl = parseHttpUrl(
     environment.BACKEND_URL ?? "http://localhost:3001",
     "BACKEND_URL",
+  );
+  const backendTlsMode = environment.BACKEND_TLS_MODE ?? "http";
+  const backendMutualTls = loadBackendMutualTlsConfiguration(
+    backendTlsMode,
+    backendUrl,
+    environment,
   );
   const allowedBackendHosts = parseCommaSeparatedValues(
     environment.BACKEND_ALLOWED_HOSTS,
@@ -98,6 +111,7 @@ export function loadConfiguration(
 
   return {
     backendUrl: backendUrl.toString(),
+    backendMutualTls,
     developmentToken: isDevelopment ? environment.DEV_GATEWAY_TOKEN : undefined,
     developmentUser: isDevelopment
       ? (environment.DEV_GATEWAY_USER ?? "local-dev-user")
@@ -107,6 +121,51 @@ export function loadConfiguration(
     logLevel,
     port,
   };
+}
+
+function loadBackendMutualTlsConfiguration(
+  mode: string,
+  backendUrl: URL,
+  environment: NodeJS.ProcessEnv,
+): BackendMutualTlsConfiguration | undefined {
+  if (mode === "http") {
+    if (backendUrl.protocol !== "http:") {
+      throw new Error("BACKEND_URL must use HTTP when BACKEND_TLS_MODE=http.");
+    }
+    return undefined;
+  }
+  if (mode !== "mtls") {
+    throw new Error("BACKEND_TLS_MODE must be either http or mtls.");
+  }
+  if (backendUrl.protocol !== "https:") {
+    throw new Error("BACKEND_URL must use HTTPS when BACKEND_TLS_MODE=mtls.");
+  }
+
+  return {
+    caCertificatePath: requiredEnvironmentValue(
+      environment.TLS_CA_CERT_PATH,
+      "TLS_CA_CERT_PATH",
+    ),
+    clientCertificatePath: requiredEnvironmentValue(
+      environment.TLS_CLIENT_CERT_PATH,
+      "TLS_CLIENT_CERT_PATH",
+    ),
+    clientKeyPath: requiredEnvironmentValue(
+      environment.TLS_CLIENT_KEY_PATH,
+      "TLS_CLIENT_KEY_PATH",
+    ),
+  };
+}
+
+function requiredEnvironmentValue(
+  value: string | undefined,
+  name: string,
+): string {
+  if (!value) {
+    throw new Error(`${name} is required when BACKEND_TLS_MODE=mtls.`);
+  }
+
+  return value;
 }
 
 function createJwtConfiguration(

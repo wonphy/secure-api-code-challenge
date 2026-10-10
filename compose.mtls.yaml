@@ -1,0 +1,29 @@
+services:
+  gateway:
+    environment:
+      BACKEND_TLS_MODE: mtls
+      BACKEND_URL: https://backend:3001
+      TLS_CA_CERT_PATH: /run/mtls/ca.crt
+      TLS_CLIENT_CERT_PATH: /run/mtls/gateway.crt
+      TLS_CLIENT_KEY_PATH: /run/mtls/gateway.key
+    volumes:
+      - ./.local/mtls/ca.crt:/run/mtls/ca.crt:ro
+      - ./.local/mtls/gateway.crt:/run/mtls/gateway.crt:ro
+      - ./.local/mtls/gateway.key:/run/mtls/gateway.key:ro
+    depends_on:
+      backend:
+        condition: service_started
+
+  backend:
+    environment:
+      BACKEND_TLS_MODE: mtls
+      TLS_CA_CERT_PATH: /run/mtls/ca.crt
+      TLS_EXPECTED_CLIENT_CN: gateway
+      TLS_SERVER_CERT_PATH: /run/mtls/backend.crt
+      TLS_SERVER_KEY_PATH: /run/mtls/backend.key
+    healthcheck:
+      disable: true
+    volumes:
+      - ./.local/mtls/ca.crt:/run/mtls/ca.crt:ro
+      - ./.local/mtls/backend.crt:/run/mtls/backend.crt:ro
+      - ./.local/mtls/backend.key:/run/mtls/backend.key:ro

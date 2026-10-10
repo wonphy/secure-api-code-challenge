@@ -1,4 +1,6 @@
 import type express from "express";
+import { readFileSync } from "node:fs";
+import { Agent } from "node:https";
 import {
   type ClientRequest,
   type IncomingMessage,
@@ -7,12 +9,19 @@ import {
 import type { Socket } from "node:net";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import type { GatewayLogger } from "../logging/gateway-logger.js";
+import type { BackendMutualTlsConfiguration } from "../config/environment.js";
 
 export function createUsersProxy(
   backendUrl: string,
   logger: GatewayLogger,
+  backendMutualTls?: BackendMutualTlsConfiguration,
 ): express.RequestHandler {
+  const agent = backendMutualTls
+    ? createMutualTlsAgent(backendUrl, backendMutualTls)
+    : undefined;
+
   return createProxyMiddleware<express.Request, express.Response>({
+    agent,
     pathFilter: "/api/users",
     target: backendUrl,
     changeOrigin: true,
@@ -82,5 +91,19 @@ export function createUsersProxy(
         );
       },
     },
+  });
+}
+
+function createMutualTlsAgent(
+  backendUrl: string,
+  configuration: BackendMutualTlsConfiguration,
+): Agent {
+  return new Agent({
+    ca: readFileSync(configuration.caCertificatePath),
+    cert: readFileSync(configuration.clientCertificatePath),
+    keepAlive: true,
+    key: readFileSync(configuration.clientKeyPath),
+    minVersion: "TLSv1.2",
+    servername: new URL(backendUrl).hostname,
   });
 }

@@ -14,6 +14,15 @@ const permissionsConfiguration: BackendConfiguration = {
   ...configuration,
   authorizationMode: "permissions",
 };
+const mutualTlsConfiguration: BackendConfiguration = {
+  ...configuration,
+  mutualTls: {
+    caCertificatePath: "/certs/ca.crt",
+    expectedClientCommonName: "gateway",
+    serverCertificatePath: "/certs/backend.crt",
+    serverKeyPath: "/certs/backend.key",
+  },
+};
 const contentTypeHeader = { "content-type": "application/json" };
 
 function permissionHeaders(...permissions: string[]): Record<string, string> {
@@ -82,6 +91,19 @@ describe("users API", () => {
     assert.equal(response.status, 403);
     assert.deepEqual(await response.json(), {
       error: "verified_user_required",
+    });
+  });
+
+  it("rejects an HTTP request when mTLS mode is enabled", async () => {
+    const backend = await startBackend(mutualTlsConfiguration);
+
+    const response = await fetch(`${backend}/api/users`, {
+      headers: { "x-verified-user": "attacker-controlled-value" },
+    });
+
+    assert.equal(response.status, 403);
+    assert.deepEqual(await response.json(), {
+      error: "trusted_gateway_required",
     });
   });
 

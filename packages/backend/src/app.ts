@@ -10,6 +10,7 @@ import {
 } from "./logging/backend-logger.js";
 import { createRequestLogger } from "./logging/request-logger.js";
 import { createVerifiedUserGuard } from "./trust/verified-user.js";
+import { createMutualTlsGuard } from "./trust/mutual-tls.js";
 import { createUsersRouter } from "./users/users-router.js";
 
 /** Creates the backend API with an isolated, in-memory user store. */
@@ -29,6 +30,9 @@ export function createApp(
   // The backend consumes gateway assertions; it never validates bearer tokens itself.
   app.use(
     "/api/users",
+    ...(configuration.mutualTls
+      ? [createMutualTlsGuard(configuration.mutualTls.expectedClientCommonName)]
+      : []),
     createVerifiedUserGuard(),
     createUsersRouter(configuration.authorizationMode),
   );

@@ -8,6 +8,14 @@ export interface BackendConfiguration {
   authorizationMode: AuthorizationMode;
   logLevel: LogLevel;
   port: number;
+  mutualTls?: MutualTlsConfiguration;
+}
+
+export interface MutualTlsConfiguration {
+  caCertificatePath: string;
+  expectedClientCommonName: string;
+  serverCertificatePath: string;
+  serverKeyPath: string;
 }
 
 export const AUTHORIZATION_MODES = ["identity-only", "permissions"] as const;
@@ -36,5 +44,46 @@ export function loadConfiguration(
     );
   }
 
-  return { authorizationMode, logLevel, port };
+  const mutualTls = loadMutualTlsConfiguration(environment);
+
+  return { authorizationMode, logLevel, mutualTls, port };
+}
+
+function loadMutualTlsConfiguration(
+  environment: NodeJS.ProcessEnv,
+): MutualTlsConfiguration | undefined {
+  const mode = environment.BACKEND_TLS_MODE ?? "http";
+  if (mode === "http") {
+    return undefined;
+  }
+  if (mode !== "mtls") {
+    throw new Error("BACKEND_TLS_MODE must be either http or mtls.");
+  }
+
+  return {
+    caCertificatePath: requiredEnvironmentValue(
+      environment.TLS_CA_CERT_PATH,
+      "TLS_CA_CERT_PATH",
+    ),
+    expectedClientCommonName: environment.TLS_EXPECTED_CLIENT_CN ?? "gateway",
+    serverCertificatePath: requiredEnvironmentValue(
+      environment.TLS_SERVER_CERT_PATH,
+      "TLS_SERVER_CERT_PATH",
+    ),
+    serverKeyPath: requiredEnvironmentValue(
+      environment.TLS_SERVER_KEY_PATH,
+      "TLS_SERVER_KEY_PATH",
+    ),
+  };
+}
+
+function requiredEnvironmentValue(
+  value: string | undefined,
+  name: string,
+): string {
+  if (!value) {
+    throw new Error(`${name} is required when BACKEND_TLS_MODE=mtls.`);
+  }
+
+  return value;
 }
