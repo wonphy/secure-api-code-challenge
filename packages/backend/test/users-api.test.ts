@@ -166,6 +166,27 @@ describe("users API", () => {
     assert.deepEqual(await response.json(), { users: [] });
   });
 
+  it("allows writes with only a gateway-verified identity in identity-only mode", async () => {
+    const backend = await startBackend();
+
+    const response = await fetch(`${backend}/api/users`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-verified-user": "gateway-verified-user",
+      },
+      body: JSON.stringify({ name: "Ada Lovelace", email: "ada@example.test" }),
+    });
+
+    assert.equal(response.status, 201);
+    const body = (await response.json()) as {
+      user: { id: string; name: string; email: string };
+    };
+    assert.match(body.user.id, /^[0-9a-f-]{36}$/i);
+    assert.equal(body.user.name, "Ada Lovelace");
+    assert.equal(body.user.email, "ada@example.test");
+  });
+
   it("creates, reads, updates, and deletes in-memory users", async () => {
     const backend = await startBackend();
     const user = await createUser(backend, {

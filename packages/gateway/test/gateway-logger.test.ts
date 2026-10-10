@@ -80,6 +80,22 @@ test("gateway validates production network and JWT algorithm configuration", () 
     () =>
       loadConfiguration({
         ...productionEnvironment,
+        BACKEND_ALLOWED_HOSTS: "",
+      }),
+    /BACKEND_ALLOWED_HOSTS must name the approved backend hostname/,
+  );
+  assert.throws(
+    () =>
+      loadConfiguration({
+        ...productionEnvironment,
+        BACKEND_URL: "http://service-user:secret@users-api.internal.example",
+      }),
+    /BACKEND_URL must not contain credentials/,
+  );
+  assert.throws(
+    () =>
+      loadConfiguration({
+        ...productionEnvironment,
         JWT_ALLOWED_ALGORITHMS: "HS256",
       }),
     /JWT_ALLOWED_ALGORITHMS must contain only/,

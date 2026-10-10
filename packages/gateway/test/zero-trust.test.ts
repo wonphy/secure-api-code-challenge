@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import { createServer, type Server } from "node:http";
 import { afterEach, describe, it } from "node:test";
-import { errors } from "jose";
+import { errors, exportJWK, generateKeyPair, SignJWT } from "jose";
 import { createApp } from "../src/app.js";
-import type { JwtVerifier } from "../src/auth/jwt-verifier.js";
+import {
+  createJwtVerifier,
+  type JwtVerifier,
+} from "../src/auth/jwt-verifier.js";
 import type { GatewayConfiguration } from "../src/config/environment.js";
 import type { GatewayLogger } from "../src/logging/gateway-logger.js";
 
@@ -50,6 +53,83 @@ function createCapturingLogger(
 }
 
 describe("zero-trust request flow", () => {
+  it("verifies a signed JWT before proxying its request body to the backend", async () => {
+    let backendRequests = 0;
+    let receivedBody = "";
+    const backend = await listen(
+      createServer((request, response) => {
+        backendRequests += 1;
+        assert.equal(request.method, "POST");
+        assert.equal(request.url, "/api/users");
+        assert.equal(request.headers.authorization, undefined);
+        assert.equal(request.headers["x-verified-user"], "oidc-user-123");
+        request.on("data", (chunk: Buffer) => {
+          receivedBody += chunk.toString();
+        });
+        request.on("end", () => {
+          response.setHeader("content-type", "application/json");
+          response.end(JSON.stringify({ accepted: true }));
+        });
+      }),
+    );
+
+    const { privateKey, publicKey } = await generateKeyPair("RS256");
+    const publicJwk = await exportJWK(publicKey);
+    publicJwk.alg = "RS256";
+    publicJwk.kid = "gateway-integration-key";
+    const jwksServer = await listen(
+      createServer((_request, response) => {
+        response.setHeader("content-type", "application/json");
+        response.end(JSON.stringify({ keys: [publicJwk] }));
+      }),
+    );
+    const issuer = "https://issuer.example.test/";
+    const audience = "secure-api";
+    const verifier = createJwtVerifier({
+      algorithms: ["RS256"],
+      audience,
+      issuer,
+      jwksUrl: new URL(`${jwksServer}/.well-known/jwks.json`),
+    });
+    await verifier.preload();
+    const gateway = await listen(
+      createServer(createApp(configuration(backend), verifier)),
+    );
+
+    async function createToken(includeExpiration: boolean): Promise<string> {
+      let token = new SignJWT({})
+        .setProtectedHeader({ alg: "RS256", kid: "gateway-integration-key" })
+        .setIssuer(issuer)
+        .setAudience(audience)
+        .setSubject("oidc-user-123")
+        .setIssuedAt();
+      if (includeExpiration) {
+        token = token.setExpirationTime("5m");
+      }
+      return token.sign(privateKey);
+    }
+
+    const requestBody = JSON.stringify({ name: "Ada Lovelace" });
+    const accepted = await fetch(`${gateway}/api/users`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${await createToken(true)}`,
+        "content-type": "application/json",
+      },
+      body: requestBody,
+    });
+    assert.equal(accepted.status, 200);
+    assert.deepEqual(await accepted.json(), { accepted: true });
+    assert.equal(receivedBody, requestBody);
+
+    const missingExpiration = await fetch(`${gateway}/api/users`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${await createToken(false)}` },
+    });
+    assert.equal(missingExpiration.status, 401);
+    assert.equal(backendRequests, 1);
+  });
+
   it("blocks missing and non-Bearer credentials before verification or proxying", async () => {
     let verifyCalls = 0;
     const verifier: JwtVerifier = {
