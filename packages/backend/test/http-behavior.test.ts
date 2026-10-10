@@ -8,7 +8,11 @@ import { createBackendErrorHandler } from "../src/errors/http-errors.js";
 import type { BackendLogger } from "../src/logging/backend-logger.js";
 
 const servers: Server[] = [];
-const configuration: BackendConfiguration = { logLevel: "error", port: 0 };
+const configuration: BackendConfiguration = {
+  authorizationMode: "identity-only",
+  logLevel: "error",
+  port: 0,
+};
 
 afterEach(async () => {
   await Promise.all(

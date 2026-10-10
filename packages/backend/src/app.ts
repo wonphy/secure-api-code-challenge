@@ -27,7 +27,11 @@ export function createApp(
   });
 
   // The backend consumes gateway assertions; it never validates bearer tokens itself.
-  app.use("/api/users", createVerifiedUserGuard(), createUsersRouter());
+  app.use(
+    "/api/users",
+    createVerifiedUserGuard(),
+    createUsersRouter(configuration.authorizationMode),
+  );
   app.use(notFoundHandler);
   app.use(createBackendErrorHandler(logger));
 

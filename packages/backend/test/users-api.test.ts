@@ -5,7 +5,15 @@ import { createApp } from "../src/app.js";
 import type { BackendConfiguration } from "../src/config/environment.js";
 
 const servers: Server[] = [];
-const configuration: BackendConfiguration = { logLevel: "error", port: 0 };
+const configuration: BackendConfiguration = {
+  authorizationMode: "identity-only",
+  logLevel: "error",
+  port: 0,
+};
+const permissionsConfiguration: BackendConfiguration = {
+  ...configuration,
+  authorizationMode: "permissions",
+};
 const contentTypeHeader = { "content-type": "application/json" };
 
 function permissionHeaders(...permissions: string[]): Record<string, string> {
@@ -37,8 +45,10 @@ afterEach(async () => {
   );
 });
 
-async function startBackend(): Promise<string> {
-  const server = createServer(createApp(configuration));
+async function startBackend(
+  backendConfiguration = configuration,
+): Promise<string> {
+  const server = createServer(createApp(backendConfiguration));
   servers.push(server);
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
@@ -76,7 +86,7 @@ describe("users API", () => {
   });
 
   it("requires the exact permission for every user route", async () => {
-    const backend = await startBackend();
+    const backend = await startBackend(permissionsConfiguration);
     const user = await createUser(backend, {
       name: "Ada Lovelace",
       email: "ada@example.test",
@@ -115,7 +125,7 @@ describe("users API", () => {
   });
 
   it("rejects malformed permission assertions and invalid request bodies", async () => {
-    const backend = await startBackend();
+    const backend = await startBackend(permissionsConfiguration);
     const malformedPermissions = await fetch(`${backend}/api/users`, {
       headers: {
         "x-verified-user": "gateway-verified-user",
@@ -143,6 +153,17 @@ describe("users API", () => {
     assert.deepEqual(await invalidUpdate.json(), {
       error: "name_or_email_is_required",
     });
+  });
+
+  it("allows a gateway-verified identity without a permissions assertion by default", async () => {
+    const backend = await startBackend();
+
+    const response = await fetch(`${backend}/api/users`, {
+      headers: { "x-verified-user": "gateway-verified-user" },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { users: [] });
   });
 
   it("creates, reads, updates, and deletes in-memory users", async () => {

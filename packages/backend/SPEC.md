@@ -40,8 +40,10 @@ the access token, then inject:
 | `X-Verified-User-Permissions` | JSON string array of verified permissions. | Route-level authorization.                                    |
 
 The backend rejects a protected request without `X-Verified-User` with `403`.
-Malformed, absent, or insufficient permissions also fail closed with `403`.
-It does not parse, retain, or validate an `Authorization` bearer token.
+By default (`AUTHORIZATION_MODE=identity-only`), that assertion is sufficient,
+as required by the challenge. In opt-in `permissions` mode, malformed, absent,
+or insufficient permissions fail closed with `403`. It does not parse, retain,
+or validate an `Authorization` bearer token.
 
 ## Authorization contract
 
@@ -54,8 +56,8 @@ It does not parse, retain, or validate an `Authorization` bearer token.
 | `DELETE` | `/api/users/:id` | `delete:user`       |
 
 Authorization is Express route middleware. The identity guard executes before
-the router, and the matching permission guard executes before each route
-handler.
+the router. The matching permission guard executes before each route handler
+only in `permissions` mode.
 
 ## User data contract
 
@@ -80,18 +82,18 @@ not a persistent datastore design.
 
 ## HTTP response policy
 
-| Scenario                              | Response                         |
-| ------------------------------------- | -------------------------------- |
-| Health probe                          | `200` JSON service status        |
-| Successful create                     | `201` JSON user                  |
-| Successful delete                     | `204` with no body               |
-| Invalid JSON or invalid user input    | `400` JSON error                 |
-| Missing identity assertion            | `403` `verified_user_required`   |
-| Malformed or insufficient permissions | `403` `insufficient_permissions` |
-| User does not exist                   | `404` `user_not_found`           |
-| Unknown backend route                 | `404` `not_found`                |
-| Duplicate normalized email            | `409` `email_already_exists`     |
-| Unexpected failure                    | `500` `internal_server_error`    |
+| Scenario                                                    | Response                         |
+| ----------------------------------------------------------- | -------------------------------- |
+| Health probe                                                | `200` JSON service status        |
+| Successful create                                           | `201` JSON user                  |
+| Successful delete                                           | `204` with no body               |
+| Invalid JSON or invalid user input                          | `400` JSON error                 |
+| Missing identity assertion                                  | `403` `verified_user_required`   |
+| Malformed or insufficient permissions in `permissions` mode | `403` `insufficient_permissions` |
+| User does not exist                                         | `404` `user_not_found`           |
+| Unknown backend route                                       | `404` `not_found`                |
+| Duplicate normalized email                                  | `409` `email_already_exists`     |
+| Unexpected failure                                          | `500` `internal_server_error`    |
 
 `401` is produced by the gateway before a request reaches the backend. No
 client response may contain a stack trace, raw exception message, or other
@@ -111,18 +113,19 @@ levels are configured by `LOG_LEVEL`: `debug`, `info`, `warn`, or `error`.
 
 ## Configuration contract
 
-| Variable    | Requirement                                           |
-| ----------- | ----------------------------------------------------- |
-| `PORT`      | Integer from `0` through `65535`; defaults to `3001`. |
-| `LOG_LEVEL` | One of the supported levels; defaults to `info`.      |
+| Variable             | Requirement                                           |
+| -------------------- | ----------------------------------------------------- |
+| `PORT`               | Integer from `0` through `65535`; defaults to `3001`. |
+| `LOG_LEVEL`          | One of the supported levels; defaults to `info`.      |
+| `AUTHORIZATION_MODE` | `identity-only` (default) or opt-in `permissions`.    |
 
 ## Review checklist
 
 - [ ] The backend is network-private and only accepts traffic from the gateway.
 - [ ] The gateway strips caller identity/permission headers before injecting its assertions.
 - [ ] The backend has no JWT validation code or OIDC dependency.
-- [ ] Every protected user route has the appropriate permission middleware.
-- [ ] Permission parsing fails closed for missing or malformed assertions.
+- [ ] Every protected route requires a verified identity assertion.
+- [ ] In `permissions` mode, every route has permission middleware that fails closed.
 - [ ] Email normalization and uniqueness apply on both create and update.
 - [ ] Error responses are JSON and never disclose exception details.
 - [ ] Logs contain request context but no name, email, token, identity assertion, permission payload, query value, or raw exception detail.

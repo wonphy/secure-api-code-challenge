@@ -12,7 +12,8 @@ contracts.
 - Serves the `/api/users` CRUD API and `/health` probe.
 - Trusts the gateway's `X-Verified-User` identity assertion; it does **not**
   validate JWTs.
-- Enforces route permissions from the gateway-injected
+- Requires a gateway-injected `X-Verified-User` assertion. Optional
+  route-level permission enforcement can use the gateway-injected
   `X-Verified-User-Permissions` JSON array.
 - Maintains a normalized, unique email index alongside its in-memory user
   store.
@@ -24,16 +25,20 @@ not proof of identity if a client can reach the backend directly.
 
 ## Configuration
 
-| Variable    | Default | Description                                                        |
-| ----------- | ------- | ------------------------------------------------------------------ |
-| `PORT`      | `3001`  | HTTP listening port.                                               |
-| `LOG_LEVEL` | `info`  | Minimum structured log level: `debug`, `info`, `warn`, or `error`. |
+| Variable             | Default         | Description                                                        |
+| -------------------- | --------------- | ------------------------------------------------------------------ |
+| `PORT`               | `3001`          | HTTP listening port.                                               |
+| `LOG_LEVEL`          | `info`          | Minimum structured log level: `debug`, `info`, `warn`, or `error`. |
+| `AUTHORIZATION_MODE` | `identity-only` | `identity-only` or opt-in `permissions` authorization.             |
 
 ## API and authorization
 
-All `/api/users` routes require `X-Verified-User` and the listed permission in
-`X-Verified-User-Permissions`. The gateway removes caller-supplied values and
-injects these headers only after successful token verification.
+All `/api/users` routes require `X-Verified-User`; this is the default
+`identity-only` mode and matches the challenge. Set
+`AUTHORIZATION_MODE=permissions` only when the IdP and gateway are configured
+to supply the verified `X-Verified-User-Permissions` claim. In that mode, the
+gateway removes caller-supplied values and each route requires the listed
+permission.
 
 | Method   | Path             | Permission    |
 | -------- | ---------------- | ------------- |

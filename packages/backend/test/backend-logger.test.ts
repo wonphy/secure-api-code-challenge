@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { loadConfiguration } from "../src/config/environment.js";
 import { createBackendLogger } from "../src/logging/backend-logger.js";
 
 test("backend logger honours its configured minimum level", () => {
@@ -39,4 +40,12 @@ test("backend logger honours its configured minimum level", () => {
   assert.equal(error.level, "error");
   assert.equal(typeof warning.timestamp, "string");
   assert.equal(typeof error.timestamp, "string");
+});
+
+test("backend defaults to identity-only authorization and rejects an invalid mode", () => {
+  assert.equal(loadConfiguration({}).authorizationMode, "identity-only");
+  assert.throws(
+    () => loadConfiguration({ AUTHORIZATION_MODE: "unknown" }),
+    /AUTHORIZATION_MODE must be one of: identity-only, permissions/,
+  );
 });
