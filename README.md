@@ -45,6 +45,33 @@ Both services return safe JSON errors and never expose stack traces. Gateway
 request logs are JSON and include timestamp, method, path, source IP, response
 status, and verified user ID where applicable.
 
+## Security responsibilities
+
+| Concern | Gateway | Backend |
+| --- | --- | --- |
+| Authentication | Requires `Authorization: Bearer <JWT>` and verifies the signature, `exp`, `iss`, and `aud` using cached OIDC JWKS. | Does not decode or validate JWTs. |
+| Proxying | Removes caller-controlled credentials and identity headers, then injects the verified user identity before forwarding `/api/users`. | Is reachable only on the internal network in Compose. |
+| Authorization | Does not make user-API permission decisions. | Requires `X-Verified-User`; optional permission mode uses the trusted permissions assertion supplied by the gateway. |
+| Error handling | Rejects missing or invalid authentication with `401`; does not forward the request. | Rejects requests missing the gateway assertion with `403`. |
+
+The backend header check is intentionally a *trust-boundary* control, not a
+substitute for network isolation: an untrusted client must never be able to
+reach the backend and supply its own identity header.
+
+## Project layout
+
+```text
+packages/
+├── gateway/                 # Express reverse proxy, OIDC verifier, JSON logging
+│   ├── src/auth/             # Bearer extraction, JWT/JWKS verification
+│   ├── src/proxy/            # Header boundary and users proxy
+│   └── test/                 # Mocked OIDC and Zero Trust tests
+└── backend/                 # Private Express User API
+    ├── src/trust/            # Gateway assertion and permission guards
+    ├── src/users/            # In-memory CRUD store and routes
+    └── test/                 # API and HTTP-behaviour tests
+```
+
 ## Prerequisites
 
 - Node.js 22+ and pnpm 10+, or [Devbox](https://www.jetify.com/devbox)
@@ -97,6 +124,22 @@ The three `JWT_*` identity values must be supplied together. In deployed
 environments, the JWKS URL must be HTTPS and `BACKEND_ALLOWED_HOSTS` must
 contain the exact host in `BACKEND_URL`. Never commit `.env` files or access
 tokens.
+
+### Optional: provision the demo API with Auth0 Terraform
+
+An existing Auth0 tenant is required and is intentionally created outside this
+repository. The minimal [Auth0 Terraform configuration](infra/auth0/README.md)
+creates an RS256 API/resource server and a native application configured for
+Postman's Authorization Code with PKCE flow. It also provisions the API
+permissions and Support/Operation/Admin roles used by the backend's optional
+permission mode. It does not create users, connections, or tenant-level
+credentials.
+
+Before Terraform can plan or apply, manually create the Auth0 tenant and a
+Machine-to-Machine application authorised for the Auth0 Management API. Export
+that application's `AUTH0_CLIENT_ID` and `AUTH0_CLIENT_SECRET`, then follow the
+[Auth0 setup guide](infra/auth0/README.md) to provision resources in that
+tenant and copy Terraform's non-secret outputs into the gateway `.env`.
 
 ## Run the services
 
@@ -198,6 +241,15 @@ same bypass attempt cannot connect from the host. That network isolation is an
 additional deployment safeguard. The `X-Verified-User` header is a trusted
 gateway assertion only because the backend is kept private; do not expose the
 backend directly to untrusted clients.
+
+### Expected failure responses
+
+| Scenario | Status | Boundary that responds |
+| --- | --- | --- |
+| Missing, malformed, expired, wrong-issuer, or wrong-audience token | `401 Unauthorized` | Gateway |
+| Malformed create/update request | `400 Bad Request` | Backend |
+| Direct backend request without `X-Verified-User` | `403 Forbidden` | Backend |
+| Unexpected service or upstream failure | `500 Internal Server Error` | Service boundary; no stack trace is returned |
 
 ## Tests and quality checks
 

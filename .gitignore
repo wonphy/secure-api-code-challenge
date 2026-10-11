@@ -151,3 +151,12 @@ vite.config.ts.timestamp-*
 
 # Devbox local state
 .devbox/
+
+# Terraform local state, provider cache, and local variable files
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log

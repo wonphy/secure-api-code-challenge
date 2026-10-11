@@ -1,0 +1,11 @@
+# Existing Auth0 tenant domain. Do not include https://.
+auth0_domain = "dev-your-tenant.au.auth0.com"
+
+# Display name for the API shown in the Auth0 dashboard.
+users_api_name = "Secure Entry Users API"
+
+# Choose a stable, unique identifier; it becomes the access-token aud claim.
+users_api_identifier = "https://secure-entry-users-api"
+
+# Display name for the public native application used by Postman.
+postman_demo_client_name = "Secure Entry Postman Client"
