@@ -86,6 +86,21 @@ devbox shell
 pnpm install
 ```
 
+### Devbox (optional)
+
+[Devbox](https://www.jetify.com/devbox) provides the project toolchain without
+requiring a global Node.js, pnpm, or Terraform installation. This repository's
+[`devbox.json`](devbox.json) pins Node.js 22, pnpm 10, and Terraform.
+
+Install Devbox using the [official installation guide](https://www.jetify.com/devbox/docs/installing_devbox/), then enter the environment with:
+
+```sh
+devbox shell
+```
+
+From that shell, use `pnpm` directly or run the supplied shortcuts, such as
+`devbox run test`, `devbox run check`, and `devbox run simulate`.
+
 ## Configure OIDC
 
 1. In the OIDC provider, create an API/resource server with identifier
