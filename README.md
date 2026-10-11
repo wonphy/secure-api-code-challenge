@@ -47,14 +47,14 @@ status, and verified user ID where applicable.
 
 ## Security responsibilities
 
-| Concern | Gateway | Backend |
-| --- | --- | --- |
-| Authentication | Requires `Authorization: Bearer <JWT>` and verifies the signature, `exp`, `iss`, and `aud` using cached OIDC JWKS. | Does not decode or validate JWTs. |
-| Proxying | Removes caller-controlled credentials and identity headers, then injects the verified user identity before forwarding `/api/users`. | Is reachable only on the internal network in Compose. |
-| Authorization | Does not make user-API permission decisions. | Requires `X-Verified-User`; optional permission mode uses the trusted permissions assertion supplied by the gateway. |
-| Error handling | Rejects missing or invalid authentication with `401`; does not forward the request. | Rejects requests missing the gateway assertion with `403`. |
+| Concern        | Gateway                                                                                                                             | Backend                                                                                                              |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Authentication | Requires `Authorization: Bearer <JWT>` and verifies the signature, `exp`, `iss`, and `aud` using cached OIDC JWKS.                  | Does not decode or validate JWTs.                                                                                    |
+| Proxying       | Removes caller-controlled credentials and identity headers, then injects the verified user identity before forwarding `/api/users`. | Is reachable only on the internal network in Compose.                                                                |
+| Authorization  | Does not make user-API permission decisions.                                                                                        | Requires `X-Verified-User`; optional permission mode uses the trusted permissions assertion supplied by the gateway. |
+| Error handling | Rejects missing or invalid authentication with `401`; does not forward the request.                                                 | Rejects requests missing the gateway assertion with `403`.                                                           |
 
-The backend header check is intentionally a *trust-boundary* control, not a
+The backend header check is intentionally a _trust-boundary_ control, not a
 substitute for network isolation: an untrusted client must never be able to
 reach the backend and supply its own identity header.
 
@@ -244,12 +244,29 @@ backend directly to untrusted clients.
 
 ### Expected failure responses
 
-| Scenario | Status | Boundary that responds |
-| --- | --- | --- |
-| Missing, malformed, expired, wrong-issuer, or wrong-audience token | `401 Unauthorized` | Gateway |
-| Malformed create/update request | `400 Bad Request` | Backend |
-| Direct backend request without `X-Verified-User` | `403 Forbidden` | Backend |
-| Unexpected service or upstream failure | `500 Internal Server Error` | Service boundary; no stack trace is returned |
+| Scenario                                                           | Status                      | Boundary that responds                       |
+| ------------------------------------------------------------------ | --------------------------- | -------------------------------------------- |
+| Missing, malformed, expired, wrong-issuer, or wrong-audience token | `401 Unauthorized`          | Gateway                                      |
+| Malformed create/update request                                    | `400 Bad Request`           | Backend                                      |
+| Direct backend request without `X-Verified-User`                   | `403 Forbidden`             | Backend                                      |
+| Unexpected service or upstream failure                             | `500 Internal Server Error` | Service boundary; no stack trace is returned |
+
+## Test with Postman
+
+The repository includes a [Postman collection](<postman/Secure API.postman_collection.json>) for manually exercising the User API through the gateway. It contains requests to list, create, retrieve, update, and delete users at `http://localhost:3000`; start the services before using it.
+
+The collection obtains and stores an Auth0 **access token** using OAuth 2.0 Authorization Code with PKCE, then sends that token as a Bearer token to the gateway. After importing the collection into Postman, open the collection's **Authorization** tab and replace the placeholders with the values for your Auth0 tenant:
+
+- **Authorization URL:** `https://<tenant-domain>/authorize`
+- **Access Token URL:** `https://<tenant-domain>/oauth/token`
+- **Client ID:** the `postman_demo_client_id` Terraform output
+- **Callback URL:** `https://oauth.pstmn.io/v1/callback`
+- **Audience:** the `users_api_audience` Terraform output
+- **Scope:** `openid profile email`
+
+Choose **Get New Access Token**, sign in as the test user, and use the resulting access token. The gateway must be configured with the matching issuer, JWKS URL, and audience as described in [Configure OIDC](#configure-oidc). The collection intentionally contains neither an access token nor a client secret; do not add either to the exported file.
+
+The saved requests use example user IDs. Create a user first, then replace the IDs in the retrieve, update, and delete requests with the ID returned by the create response. The backend's in-memory data resets when it restarts.
 
 ## Tests and quality checks
 

@@ -112,21 +112,21 @@ The provisioned API uses Auth0 Core RBAC and includes the `permissions` claim
 in access tokens. The permissions match the backend's optional
 `AUTHORIZATION_MODE=permissions` checks:
 
-| Permission | API operation |
-| --- | --- |
-| `read:users` | `GET /api/users` |
-| `read:user` | `GET /api/users/:id` |
-| `create:user` | `POST /api/users` |
-| `update:user` | `PUT /api/users/:id` |
+| Permission    | API operation           |
+| ------------- | ----------------------- |
+| `read:users`  | `GET /api/users`        |
+| `read:user`   | `GET /api/users/:id`    |
+| `create:user` | `POST /api/users`       |
+| `update:user` | `PUT /api/users/:id`    |
 | `delete:user` | `DELETE /api/users/:id` |
 
 The roles deliberately do not create or manage users:
 
-| Role | Granted permissions |
-| --- | --- |
-| `secure-entry-support` | `read:users`, `read:user` |
+| Role                     | Granted permissions                                          |
+| ------------------------ | ------------------------------------------------------------ |
+| `secure-entry-support`   | `read:users`, `read:user`                                    |
 | `secure-entry-operation` | All support permissions plus `create:user` and `update:user` |
-| `secure-entry-admin` | All User API permissions |
+| `secure-entry-admin`     | All User API permissions                                     |
 
 After `terraform apply`, assign one of these roles to the manually created
 test user in **Auth0 Dashboard → User Management → Users → _user_ → Roles**.
