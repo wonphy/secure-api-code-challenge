@@ -1,4 +1,4 @@
-# Secure API Code Challenge
+# Secure Entry Zero Trust API
 
 Secure Entry is a small Zero Trust proof of concept: the gateway is the only
 public authentication boundary, while the User API trusts only identity
