@@ -32,6 +32,7 @@ const SUPPORTED_JWT_ALGORITHMS = [
 ] as const satisfies readonly JWSAlgorithm[];
 
 export interface GatewayConfiguration {
+  backendTimeoutMs: number;
   backendUrl: string;
   backendMutualTls?: BackendMutualTlsConfiguration;
   developmentToken?: string;
@@ -59,6 +60,10 @@ export function loadConfiguration(
   const backendUrl = parseHttpUrl(
     environment.BACKEND_URL ?? "http://localhost:3001",
     "BACKEND_URL",
+  );
+  const backendTimeoutMs = parseTimeout(
+    environment.BACKEND_TIMEOUT_MS,
+    "BACKEND_TIMEOUT_MS",
   );
   const backendTlsMode = environment.BACKEND_TLS_MODE ?? "http";
   const backendMutualTls = loadBackendMutualTlsConfiguration(
@@ -110,6 +115,7 @@ export function loadConfiguration(
   }
 
   return {
+    backendTimeoutMs,
     backendUrl: backendUrl.toString(),
     backendMutualTls,
     developmentToken: isDevelopment ? environment.DEV_GATEWAY_TOKEN : undefined,
@@ -121,6 +127,15 @@ export function loadConfiguration(
     logLevel,
     port,
   };
+}
+
+function parseTimeout(value: string | undefined, name: string): number {
+  const timeout = Number.parseInt(value ?? "10000", 10);
+  if (!Number.isInteger(timeout) || timeout < 100 || timeout > 300_000) {
+    throw new Error(`${name} must be an integer between 100 and 300000.`);
+  }
+
+  return timeout;
 }
 
 function loadBackendMutualTlsConfiguration(

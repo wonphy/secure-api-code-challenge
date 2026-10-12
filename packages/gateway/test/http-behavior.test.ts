@@ -35,6 +35,7 @@ async function listen(server: Server): Promise<string> {
 
 function configuration(): GatewayConfiguration {
   return {
+    backendTimeoutMs: 10_000,
     backendUrl: "http://127.0.0.1:1",
     isDevelopment: false,
     logLevel: "info",

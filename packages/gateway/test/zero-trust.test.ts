@@ -35,6 +35,7 @@ async function listen(server: Server): Promise<string> {
 
 function configuration(backendUrl: string): GatewayConfiguration {
   return {
+    backendTimeoutMs: 10_000,
     backendUrl,
     isDevelopment: false,
     logLevel: "info",
@@ -280,6 +281,33 @@ describe("zero-trust request flow", () => {
       error: "internal_server_error",
     });
     assert.doesNotMatch(responseBody, /database password/);
+  });
+
+  it("bounds a stalled backend request", async () => {
+    const backend = await listen(
+      createServer(() => {
+        // Deliberately keep the connection open to exercise the proxy timeout.
+      }),
+    );
+    const verifier: JwtVerifier = {
+      preload: async () => undefined,
+      verify: async () => ({ userId: "verified-user-123", permissions: [] }),
+    };
+    const gateway = await listen(
+      createServer(
+        createApp(
+          { ...configuration(backend), backendTimeoutMs: 100 },
+          verifier,
+        ),
+      ),
+    );
+
+    const response = await fetch(`${gateway}/api/users`, {
+      headers: { authorization: "Bearer valid-token" },
+    });
+
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), { error: "internal_server_error" });
   });
 
   it("logs proxy failures without query values or raw error messages", async () => {

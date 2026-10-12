@@ -125,6 +125,7 @@ Example `packages/gateway/.env`:
 ```dotenv
 PORT=3000
 BACKEND_URL=http://backend:3001
+BACKEND_TIMEOUT_MS=10000
 BACKEND_ALLOWED_HOSTS=backend
 BACKEND_TLS_MODE=http
 
@@ -307,3 +308,4 @@ See the service-level documentation for implementation detail:
 
 - [Gateway](packages/gateway/README.md)
 - [Backend](packages/backend/README.md)
+- [Deployment security architecture](docs/deployment-security.md)

@@ -15,6 +15,7 @@ export function createUsersProxy(
   backendUrl: string,
   logger: GatewayLogger,
   backendMutualTls?: BackendMutualTlsConfiguration,
+  backendTimeoutMs = 10_000,
 ): express.RequestHandler {
   const agent = backendMutualTls
     ? createMutualTlsAgent(backendUrl, backendMutualTls)
@@ -23,6 +24,7 @@ export function createUsersProxy(
   return createProxyMiddleware<express.Request, express.Response>({
     agent,
     pathFilter: "/api/users",
+    proxyTimeout: backendTimeoutMs,
     target: backendUrl,
     changeOrigin: true,
     selfHandleResponse: true,

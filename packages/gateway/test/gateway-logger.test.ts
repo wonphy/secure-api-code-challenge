@@ -59,6 +59,16 @@ test("gateway validates production network and JWT algorithm configuration", () 
 
   const configuration = loadConfiguration(productionEnvironment);
   assert.deepEqual(configuration.jwt?.algorithms, ["RS256"]);
+  assert.equal(configuration.backendTimeoutMs, 10_000);
+
+  assert.throws(
+    () =>
+      loadConfiguration({
+        ...productionEnvironment,
+        BACKEND_TIMEOUT_MS: "99",
+      }),
+    /BACKEND_TIMEOUT_MS must be an integer between 100 and 300000/,
+  );
 
   assert.throws(
     () =>

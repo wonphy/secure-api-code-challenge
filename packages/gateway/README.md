@@ -26,6 +26,7 @@ API client -> gateway -> backend (internal only)
 | ------------------------ | ------------------------------------------------------------------------------- | ---------------------------- |
 | `PORT`                   | Gateway listen port                                                             | `3000`                       |
 | `BACKEND_URL`            | Internal backend base URL                                                       | `http://localhost:3001`      |
+| `BACKEND_TIMEOUT_MS`     | Maximum gateway-to-backend request duration, in milliseconds                    | `10000`                      |
 | `BACKEND_ALLOWED_HOSTS`  | Exact internal backend hostnames, comma-separated; required outside development | required outside development |
 | `JWT_JWKS_URL`           | OIDC provider JWKS endpoint                                                     | required outside development |
 | `JWT_ISSUER`             | Expected access-token issuer                                                    | required outside development |

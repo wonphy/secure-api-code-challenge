@@ -41,6 +41,7 @@ export function createApp(
       configuration.backendUrl,
       logger,
       configuration.backendMutualTls,
+      configuration.backendTimeoutMs,
     ),
   );
   app.use(notFoundHandler);
