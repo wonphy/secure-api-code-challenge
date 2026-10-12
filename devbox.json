@@ -12,6 +12,7 @@
       "format": "pnpm format",
       "check": "pnpm check",
       "test": "pnpm test",
+      "audit": "pnpm audit --prod --audit-level=high",
       "simulate": "docker compose up --build --force-recreate --remove-orphans",
       "simulate:down": "docker compose down",
       "simulate:mtls": "sh scripts/setup-local-mtls.sh && docker compose -f compose.yaml -f compose.mtls.yaml up --build --force-recreate --remove-orphans",
