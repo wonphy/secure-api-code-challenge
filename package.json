@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.33.4",
   "engines": {
     "node": ">=22",
     "pnpm": ">=10"
@@ -19,17 +20,23 @@
     "format:check": "prettier . --check",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check",
     "test": "pnpm --filter @secure-api/gateway --filter @secure-api/backend -r run test",
+    "test:integration": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.integration.config.ts",
     "compose:up": "docker compose up --build",
     "compose:down": "docker compose down"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
+    "@jest/globals": "^30.5.2",
     "@types/express": "^5.0.3",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.18.0",
     "eslint": "^9.35.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^16.3.0",
+    "jest": "^30.5.2",
+    "jose": "^6.2.12",
     "prettier": "^3.6.2",
+    "ts-jest": "^29.4.14",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.42.0"

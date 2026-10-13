@@ -5,7 +5,7 @@ COPY . .
 RUN corepack enable \
   && pnpm install --frozen-lockfile \
   && pnpm --filter @secure-api/gateway run build \
-  && pnpm --filter @secure-api/gateway deploy --prod /opt/service
+  && pnpm --filter @secure-api/gateway deploy --legacy --prod /opt/service
 
 FROM node:22-alpine
 

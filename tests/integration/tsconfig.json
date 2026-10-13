@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "isolatedModules": true,
+    "noEmit": true,
+    "rootDir": "../..",
+    "types": ["jest", "node"]
+  },
+  "include": [
+    "./**/*.ts",
+    "../../packages/backend/src/**/*.ts",
+    "../../packages/gateway/src/**/*.ts"
+  ]
+}

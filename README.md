@@ -74,19 +74,19 @@ infra/auth0/                  # Optional Auth0 demo API and role provisioning
 scripts/                      # Local mTLS certificates and GitHub Actions helpers
 compose.yaml                  # Public gateway plus private backend topology
 compose.mtls.yaml             # Optional mTLS overlay for gateway-to-backend traffic
+tests/integration/            # Jest end-to-end Zero Trust flow tests
 ```
 
 ## Prerequisites
 
-- Node.js 22+ and pnpm 10+, or [Devbox](https://www.jetify.com/devbox)
+- Node.js 22+ and pnpm 10.33.4, or [Devbox](https://www.jetify.com/devbox)
 - Docker and Docker Compose for the deployment-like run
-- An OIDC provider developer tenant (for example Auth0, Okta, or Amazon
-  Cognito) and a test user
+- For the live Compose demonstration: an OIDC provider developer tenant (for
+  example Auth0, Okta, or Amazon Cognito) and a test user
 
 Install dependencies:
 
 ```sh
-devbox shell
 pnpm install
 ```
 
@@ -104,7 +104,8 @@ devbox shell
 ```
 
 From that shell, use `pnpm` directly or the supplied shortcuts, including
-`devbox run test`, `devbox run check`, and `devbox run simulate`.
+`devbox run test`, `devbox run test:integration`, `devbox run check`, and
+`devbox run simulate`.
 
 ## Delivery workflow
 
@@ -128,9 +129,9 @@ registry, signing, environment, and deployment details only after those target
 systems are chosen.
 
 Every pull request targeting `main` runs the shared validation workflow. It
-type-checks, lints, checks formatting, runs the test suite, validates both
-Compose definitions, builds the service images, and checks production
-dependencies for critical advisories.
+type-checks, lints, checks formatting, runs the native and Jest integration
+suites, validates both Compose definitions, builds the service images, and
+checks production dependencies for critical advisories.
 
 To simulate the workflows locally, start Docker Desktop and run:
 
@@ -395,17 +396,22 @@ The saved requests use example user IDs. Create a user first, then replace the I
 
 ## Tests and quality checks
 
-Run the complete test suite:
+Run both test suites:
 
 ```sh
 devbox run test
-# or: pnpm test
+devbox run test:integration
+
+# Or, inside a Devbox shell or with Node and pnpm installed:
+pnpm test
+pnpm test:integration
 ```
 
-Gateway tests mock the OIDC/JWKS provider and cover signature, expiry, issuer,
-and audience validation as well as JWKS startup behaviour. Zero Trust tests
-prove that a missing token is blocked by the gateway, a backend bypass is
-forbidden, and a verified identity is forwarded only after authentication.
+The native `node:test` suite covers JWT validation, API behavior, logging, and
+configuration. The Jest integration suite starts a mock OIDC JWKS provider,
+the real gateway, and the real backend in-process. It demonstrates token
+blocking, trusted-header injection, HTTP and mTLS gateway-bypass protection,
+and identity-only and permissions authorization flows.
 
 ```sh
 devbox run check          # type-check, lint, and check formatting
