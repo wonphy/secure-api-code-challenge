@@ -14,7 +14,8 @@ See [SPEC.md](SPEC.md) for the gateway's security, logging, error-handling, and 
 - Remove inbound `Authorization`, `X-Verified-User`, and `X-Verified-User-Permissions` headers, then inject the verified user identity and access-token permissions for the backend. `X-Verified-User-Permissions` is a JSON string array.
 - Write JSON request-completion logs with timestamp, method, path, source IP, response status, and verified user ID when available.
 - Disable framework-identifying headers, prevent caching of User API responses, and emit a minimal browser-safety header policy. TLS-only headers such as HSTS are emitted by the TLS-terminating ingress.
-- Expose `GET /health` without authentication and proxy protected `/api/users` requests.
+- Expose unauthenticated `GET /health` and `GET /ready` probes, and proxy
+  protected `/api/users` requests.
 
 ```
 API client -> gateway -> backend (internal only)
@@ -28,7 +29,11 @@ API client -> gateway -> backend (internal only)
 | `PORT`                   | Gateway listen port                                                             | `3000`                       |
 | `BACKEND_URL`            | Internal backend base URL                                                       | `http://localhost:3001`      |
 | `BACKEND_TIMEOUT_MS`     | Maximum gateway-to-backend request duration, in milliseconds                    | `10000`                      |
+| `BACKEND_TLS_MODE`       | `http`, or `mtls` with an HTTPS backend URL and the TLS files below             | `http`                       |
 | `BACKEND_ALLOWED_HOSTS`  | Exact internal backend hostnames, comma-separated; required outside development | required outside development |
+| `TLS_CA_CERT_PATH`       | CA certificate used to verify the backend; required for `mtls`                  | required for `mtls`          |
+| `TLS_CLIENT_CERT_PATH`   | Gateway client certificate; required for `mtls`                                 | required for `mtls`          |
+| `TLS_CLIENT_KEY_PATH`    | Gateway client private key; required for `mtls`                                 | required for `mtls`          |
 | `JWT_JWKS_URL`           | OIDC provider JWKS endpoint                                                     | required outside development |
 | `JWT_ISSUER`             | Expected access-token issuer                                                    | required outside development |
 | `JWT_AUDIENCE`           | Expected access-token audience                                                  | required outside development |
@@ -41,8 +46,9 @@ JWT settings are required unless `NODE_ENV=development`. A partial JWT
 configuration is rejected at startup. Outside development, the JWKS endpoint
 must use HTTPS and the backend URL hostname must exactly match
 `BACKEND_ALLOWED_HOSTS`. `RS256` is the default Auth0-compatible signing
-algorithm; only approved asymmetric algorithms can be configured. Root-level
-documentation covers local configuration and deployment.
+algorithm; only approved asymmetric algorithms can be configured. In `mtls`
+mode, `BACKEND_URL` must use HTTPS and all three TLS paths are required.
+Root-level documentation covers local configuration and deployment.
 
 ### Token policy
 
@@ -72,8 +78,15 @@ src/
 │   └── jwt-verifier.ts    OIDC JWT verification and JWKS resolver
 ├── config/
 │   └── environment.ts     Environment validation and configuration model
+├── errors/
+│   └── http-errors.ts     Safe JSON error and unknown-route responses
+├── logging/
+│   ├── gateway-logger.ts  Structured logger and log filtering
+│   └── request-logger.ts  Request-completion logging
 ├── proxy/
 │   └── users-proxy.ts     Protected backend proxy and header boundary
+├── security/
+│   └── response-headers.ts Browser-safety and API cache-control headers
 └── types/
     └── express.d.ts       Type for the verified identity held during a request
 ```
