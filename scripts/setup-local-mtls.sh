@@ -14,6 +14,8 @@ command -v openssl >/dev/null 2>&1 || { echo "OpenSSL is required." >&2; exit 1;
 present=0
 for file in $REQUIRED_FILES; do [ -f "$CERTIFICATE_DIRECTORY/$file" ] && present=$((present + 1)); done
 if [ "$present" -eq 6 ] && [ "$FORCE" = false ]; then
+  # Repair certificate permissions from older generated sets as well.
+  chmod 644 "$CERTIFICATE_DIRECTORY"/*.crt
   # Avoid silently rotating a certificate set that a running Compose stack uses.
   echo "Reusing local mTLS certificates in $CERTIFICATE_DIRECTORY."; exit 0
 fi
@@ -44,5 +46,9 @@ openssl x509 -req -sha256 -days 30 -in "$CERTIFICATE_DIRECTORY/gateway.csr" -CA 
 
 # Keep only the certificate material consumed by the Compose overlay.
 rm -f "$CERTIFICATE_DIRECTORY"/*.csr "$CERTIFICATE_DIRECTORY"/*.ext "$CERTIFICATE_DIRECTORY"/*.srl
+# Certificate files contain only public material. The curl image used by the
+# bypass check runs as an unprivileged user, so it must be able to read the CA
+# certificate from its read-only bind mount.
+chmod 644 "$CERTIFICATE_DIRECTORY"/*.crt
 chmod 600 "$CERTIFICATE_DIRECTORY"/*.key
 echo "Created local mTLS certificates in $CERTIFICATE_DIRECTORY."
