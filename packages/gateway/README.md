@@ -44,6 +44,20 @@ must use HTTPS and the backend URL hostname must exactly match
 algorithm; only approved asymmetric algorithms can be configured. Root-level
 documentation covers local configuration and deployment.
 
+### Token policy
+
+The gateway verifies the JWT signature, issuer, audience, and expiry. The JWT
+library also enforces `nbf` when that claim is present. The proof of concept
+uses `sub` as the gateway identity assertion and accepts a non-empty `email`
+claim only as a fallback, as permitted by the challenge brief.
+
+For production, require `sub` as the durable user identifier: email addresses
+can change, be reassigned, or represent personal information in gateway logs.
+Agree an access-token lifetime with the identity-provider owner before
+enforcing a maximum lifetime. That policy should require `iat` and reject a
+token whose `exp - iat` exceeds the approved limit; do not introduce a
+hard-coded lifetime that might reject the provider's legitimate tokens.
+
 `info` logs successful requests and lifecycle events. `warn` retains client and authentication failures while suppressing successful-request logs; `error` retains unexpected and proxy failures only. `debug` additionally emits safe JWT diagnostics.
 
 ## Project structure
