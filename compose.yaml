@@ -10,6 +10,8 @@ services:
     environment:
       BACKEND_URL: http://backend:3001
       BACKEND_ALLOWED_HOSTS: backend
+    labels:
+      com.secure-entry-zero-trust-api.log-view: "true"
     networks:
       - public
       - private
@@ -37,6 +39,8 @@ services:
       - ./packages/backend/.env
     environment:
       PORT: 3001
+    labels:
+      com.secure-entry-zero-trust-api.log-view: "true"
     expose:
       - "3001"
     networks:

@@ -218,6 +218,26 @@ remove containers with:
 devbox run simulate:down
 ```
 
+### Explore local logs
+
+Start the lightweight Dozzle log viewer in a separate terminal:
+
+```sh
+devbox run logs
+```
+
+Open [http://localhost:9999](http://localhost:9999) to browse and search the
+gateway and backend logs in real time. Dozzle is bound to loopback and filtered
+to this project's containers; its container-management actions and shell access
+remain disabled. Stop it with:
+
+```sh
+devbox run logs:down
+```
+
+Dozzle needs read access to the Docker socket to view logs. Keep this
+local-only configuration out of deployed environments.
+
 ### Local development
 
 Start the backend in one terminal:

@@ -1,0 +1,15 @@
+services:
+  dozzle:
+    image: amir20/dozzle:v11.3.1
+    ports:
+      - "127.0.0.1:9999:8080"
+    environment:
+      DOZZLE_FILTER: label=com.secure-entry-zero-trust-api.log-view
+      DOZZLE_HOSTNAME: secure-entry-zero-trust-api
+      DOZZLE_NO_ANALYTICS: "true"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - dozzle-data:/data
+
+volumes:
+  dozzle-data:
