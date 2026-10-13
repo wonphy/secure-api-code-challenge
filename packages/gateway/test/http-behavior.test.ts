@@ -44,6 +44,25 @@ function configuration(): GatewayConfiguration {
 }
 
 describe("gateway HTTP error responses", () => {
+  it("keeps liveness separate from readiness", async () => {
+    const gateway = await listen(
+      createServer(
+        createApp(configuration(), undefined, undefined, () => false),
+      ),
+    );
+
+    const health = await fetch(`${gateway}/health`);
+    const readiness = await fetch(`${gateway}/ready`);
+
+    assert.equal(health.status, 200);
+    assert.deepEqual(await health.json(), { service: "gateway", status: "ok" });
+    assert.equal(readiness.status, 503);
+    assert.deepEqual(await readiness.json(), {
+      service: "gateway",
+      status: "not_ready",
+    });
+  });
+
   it("returns a JSON 404 for an unknown route", async () => {
     const gateway = await listen(createServer(createApp(configuration())));
 

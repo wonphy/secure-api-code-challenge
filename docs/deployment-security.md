@@ -75,3 +75,17 @@ Do not add ad hoc SAN parsing or static certificate rotation to this service
 until the deployment platform defines the issuer, SAN format, trust bundle,
 and rotation model. Revisit the backend's Common Name check when production
 mTLS is introduced.
+
+## Health, readiness, and shutdown
+
+Both services expose `GET /health` as a liveness signal and `GET /ready` as a
+readiness signal. A process is ready only after its listener is active; the
+gateway preloads the configured JWKS before it starts listening. During
+`SIGTERM` or `SIGINT`, a service becomes unready, stops accepting new
+connections, and allows in-flight requests to drain for up to 10 seconds
+before force-closing remaining connections.
+
+Use `/health` for liveness probes and `/ready` for readiness probes. Do not
+make gateway readiness synchronously depend on a live backend or IdP request:
+that would turn a dependency outage into a cascading readiness failure and
+would undermine the gateway's JWKS cache.

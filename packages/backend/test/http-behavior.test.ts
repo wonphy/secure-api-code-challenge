@@ -36,6 +36,23 @@ async function listen(server: Server): Promise<string> {
 }
 
 describe("backend HTTP behavior", () => {
+  it("keeps liveness separate from readiness", async () => {
+    const backend = await listen(
+      createServer(createApp(configuration, undefined, () => false)),
+    );
+
+    const health = await fetch(`${backend}/health`);
+    const readiness = await fetch(`${backend}/ready`);
+
+    assert.equal(health.status, 200);
+    assert.deepEqual(await health.json(), { service: "backend", status: "ok" });
+    assert.equal(readiness.status, 503);
+    assert.deepEqual(await readiness.json(), {
+      service: "backend",
+      status: "not_ready",
+    });
+  });
+
   it("keeps health public and returns JSON for unknown routes", async () => {
     const backend = await listen(createServer(createApp(configuration)));
 

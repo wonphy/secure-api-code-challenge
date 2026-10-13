@@ -17,6 +17,7 @@ import { createUsersRouter } from "./users/users-router.js";
 export function createApp(
   configuration: BackendConfiguration,
   logger: BackendLogger = createBackendLogger(configuration.logLevel),
+  isReady: () => boolean = () => true,
 ): express.Express {
   const app = express();
 
@@ -25,6 +26,13 @@ export function createApp(
 
   app.get("/health", (_request, response) => {
     response.status(200).json({ service: "backend", status: "ok" });
+  });
+  app.get("/ready", (_request, response) => {
+    if (!isReady()) {
+      response.status(503).json({ service: "backend", status: "not_ready" });
+      return;
+    }
+    response.status(200).json({ service: "backend", status: "ready" });
   });
 
   // The backend consumes gateway assertions; it never validates bearer tokens itself.

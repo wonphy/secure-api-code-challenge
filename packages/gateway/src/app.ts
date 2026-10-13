@@ -21,6 +21,7 @@ export function createApp(
   configuration: GatewayConfiguration,
   verifier?: JwtVerifier,
   logger: GatewayLogger = createGatewayLogger(configuration.logLevel),
+  isReady: () => boolean = () => true,
 ): express.Express {
   const app = express();
 
@@ -31,6 +32,13 @@ export function createApp(
 
   app.get("/health", (_request, response) => {
     response.status(200).json({ service: "gateway", status: "ok" });
+  });
+  app.get("/ready", (_request, response) => {
+    if (!isReady()) {
+      response.status(503).json({ service: "gateway", status: "not_ready" });
+      return;
+    }
+    response.status(200).json({ service: "gateway", status: "ready" });
   });
 
   // Authentication must run before the proxy can reach the protected backend API.
