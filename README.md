@@ -123,6 +123,11 @@ The staging and release actions intentionally do not publish or deploy: add
 registry, signing, environment, and deployment details only after those target
 systems are chosen.
 
+Every pull request targeting `main` runs the shared validation workflow. It
+type-checks, lints, checks formatting, runs the test suite, validates both
+Compose definitions, builds the service images, and checks production
+dependencies for critical advisories.
+
 To simulate the workflows locally, start Docker Desktop and run:
 
 ```sh
