@@ -312,10 +312,10 @@ devbox run bypass:gateway
 devbox run bypass:gateway demo-user
 ```
 
-| Command | HTTP simulation | mTLS simulation |
-| --- | --- | --- |
-| `devbox run bypass:gateway` | `403` with `verified_user_required` | Rejected during the TLS handshake |
-| `devbox run bypass:gateway demo-user` | `200` | Rejected during the TLS handshake |
+| Command                               | HTTP simulation                     | mTLS simulation                   |
+| ------------------------------------- | ----------------------------------- | --------------------------------- |
+| `devbox run bypass:gateway`           | `403` with `verified_user_required` | Rejected during the TLS handshake |
+| `devbox run bypass:gateway demo-user` | `200`                               | Rejected during the TLS handshake |
 
 The second command sends forged `X-Verified-User` and `read:users` permissions
 assertions. The mTLS test deliberately supplies the CA certificate but never a
