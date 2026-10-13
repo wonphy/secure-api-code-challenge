@@ -319,6 +319,30 @@ additional deployment safeguard. The `X-Verified-User` header is a trusted
 gateway assertion only because the backend is kept private; do not expose the
 backend directly to untrusted clients.
 
+### Bypass the gateway in Compose
+
+`bypass:gateway` runs a temporary curl client on the backend's private Docker
+network; it does not expose a backend port on the host. It detects the running
+backend transport, so the same command works with either simulation mode.
+
+```sh
+# Start either `devbox run simulate` or `devbox run simulate:mtls` in another
+# terminal first.
+devbox run bypass:gateway
+devbox run bypass:gateway demo-user
+```
+
+| Command                               | HTTP simulation                     | mTLS simulation                   |
+| ------------------------------------- | ----------------------------------- | --------------------------------- |
+| `devbox run bypass:gateway`           | `403` with `verified_user_required` | Rejected during the TLS handshake |
+| `devbox run bypass:gateway demo-user` | `200`                               | Rejected during the TLS handshake |
+
+The second command sends forged `X-Verified-User` and `read:users` permissions
+assertions. The mTLS test deliberately supplies the CA certificate but never a
+gateway client certificate, so neither request reaches the backend’s HTTP
+handler; a curl TLS error followed by `Expected mTLS handshake rejection` is
+the successful result.
+
 ### Expected failure responses
 
 | Scenario                                                           | Status                      | Boundary that responds                       |
@@ -326,6 +350,7 @@ backend directly to untrusted clients.
 | Missing, malformed, expired, wrong-issuer, or wrong-audience token | `401 Unauthorized`          | Gateway                                      |
 | Malformed create/update request                                    | `400 Bad Request`           | Backend                                      |
 | Direct backend request without `X-Verified-User`                   | `403 Forbidden`             | Backend                                      |
+| Direct backend bypass with a forged identity assertion (mTLS)      | TLS handshake rejected      | Backend mTLS listener                        |
 | Unexpected service or upstream failure                             | `500 Internal Server Error` | Service boundary; no stack trace is returned |
 
 ## Test with Postman

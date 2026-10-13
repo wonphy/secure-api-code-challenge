@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       run_mtls_e2e:
-        description: Run the Docker-based mTLS handshake integration check.
+        description: Run the Docker-based mTLS gateway-bypass integration check.
         required: false
         default: false
         type: boolean
@@ -69,8 +69,10 @@ jobs:
           done
           docker compose -f compose.yaml -f compose.mtls.yaml logs --no-color
           exit 1
-      - name: Verify an uncredentialed peer is rejected during the TLS handshake
-        run: sh scripts/test-mtls-handshake-rejection.sh
+      - name: Verify gateway bypass attempts are rejected during the TLS handshake
+        run: |
+          sh scripts/bypass-gateway.sh
+          sh scripts/bypass-gateway.sh ci-forged-user
       - name: Print service logs on failure
         if: failure()
         run: docker compose -f compose.yaml -f compose.mtls.yaml logs --no-color
