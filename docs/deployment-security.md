@@ -54,3 +54,24 @@ not replace edge connection, request-body, or client-response timeouts.
 Choose the timeout from the service latency objective and retry policy. Avoid
 blind automatic retries for non-idempotent user writes, because a timed-out
 response does not prove that the backend did not complete the operation.
+
+## Production mTLS workload identity
+
+The Compose mTLS overlay is a local demonstration. It uses a local CA and a
+gateway client certificate whose Common Name is checked by the backend after
+the TLS handshake validates the certificate chain. This provides a useful
+defence-in-depth control for the proof of concept, but a Common Name is not a
+production workload-identity policy.
+
+In production, the platform should issue short-lived workload certificates and
+rotate them automatically. The backend should verify the expected workload
+identity in a certificate Subject Alternative Name (SAN), preferably a stable
+URI identity such as SPIFFE, or a deployment-approved DNS SAN. A service mesh,
+SPIFFE/SPIRE, or managed workload-identity/certificate service should own
+issuance, trust-bundle distribution, rotation, expiry alerting, and revocation
+behaviour.
+
+Do not add ad hoc SAN parsing or static certificate rotation to this service
+until the deployment platform defines the issuer, SAN format, trust bundle,
+and rotation model. Revisit the backend's Common Name check when production
+mTLS is introduced.
