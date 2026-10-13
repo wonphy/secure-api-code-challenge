@@ -25,6 +25,11 @@ or equivalent workload controls must restrict it to the gateway. Where the
 threat model requires it, mTLS authenticates the gateway workload to the
 backend in addition to network isolation.
 
+The Compose demonstration mirrors this with a public network for the gateway
+and an internal private network shared only by the gateway and backend. This
+is defence in depth for local integration; production still requires the
+platform controls described above.
+
 If the gateway receives client IP forwarding headers from the edge, configure
 Express to trust only the known ingress proxy addresses or hop count after the
 gateway is no longer directly reachable. Do not enable unrestricted proxy trust.

@@ -10,6 +10,9 @@ services:
     environment:
       BACKEND_URL: http://backend:3001
       BACKEND_ALLOWED_HOSTS: backend
+    networks:
+      - public
+      - private
     depends_on:
       backend:
         condition: service_healthy
@@ -24,6 +27,8 @@ services:
       PORT: 3001
     expose:
       - "3001"
+    networks:
+      - private
     healthcheck:
       test:
         [
@@ -36,3 +41,10 @@ services:
       timeout: 3s
       retries: 10
       start_period: 5s
+
+networks:
+  # The gateway needs external IdP/JWKS access as well as backend access.
+  public:
+  # The backend has no host port and no route beyond gateway-attached services.
+  private:
+    internal: true
