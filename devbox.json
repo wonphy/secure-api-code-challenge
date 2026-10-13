@@ -1,5 +1,5 @@
 {
-  "packages": ["nodejs@22", "pnpm@10", "terraform@1.12.0"],
+  "packages": ["nodejs@22", "pnpm@10", "terraform@1.12.0", "act@0.2.89"],
   "env": {
     "NODE_ENV": "development"
   },
@@ -17,7 +17,13 @@
       "simulate:down": "docker compose down",
       "simulate:mtls": "sh scripts/setup-local-mtls.sh && docker compose -f compose.yaml -f compose.mtls.yaml up --build --force-recreate --remove-orphans",
       "simulate:mtls:down": "docker compose -f compose.yaml -f compose.mtls.yaml down",
-      "test:mtls-handshake": "sh scripts/test-mtls-handshake-rejection.sh"
+      "test:mtls-handshake": "sh scripts/test-mtls-handshake-rejection.sh",
+      "act": "sh scripts/run-act.sh",
+      "act:pr": "sh scripts/run-act.sh pr",
+      "act:merge-queue": "sh scripts/run-act.sh merge-queue",
+      "act:main": "sh scripts/run-act.sh main",
+      "act:release": "sh scripts/run-act.sh release",
+      "act:mtls": "sh scripts/run-act.sh mtls"
     }
   }
 }

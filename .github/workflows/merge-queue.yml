@@ -1,0 +1,15 @@
+name: Merge queue
+
+on:
+  merge_group:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-merged-result:
+    # Required when GitHub merge queue is enabled: validates the queued merge SHA.
+    uses: ./.github/workflows/validate.yml
+    with:
+      run_mtls_e2e: true

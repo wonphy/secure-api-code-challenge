@@ -1,0 +1,23 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+# A real release workflow would add narrowly scoped package-registry and deployment permissions.
+permissions:
+  contents: read
+
+jobs:
+  validate-release:
+    uses: ./.github/workflows/validate.yml
+    with:
+      run_mtls_e2e: true
+
+  release-placeholder:
+    needs: validate-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain the production handoff
+        # This stays non-mutating until a registry, signing key, and deployment environment are approved.
+        run: echo "Release validation passed; a production pipeline would sign, publish, deploy, and smoke-test the release here."

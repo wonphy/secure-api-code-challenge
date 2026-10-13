@@ -90,7 +90,8 @@ pnpm install
 
 [Devbox](https://www.jetify.com/devbox) provides the project toolchain without
 requiring a global Node.js, pnpm, or Terraform installation. This repository's
-[`devbox.json`](devbox.json) pins Node.js 22, pnpm 10, and Terraform.
+[`devbox.json`](devbox.json) pins Node.js 22, pnpm 10, Terraform, and the
+local GitHub Actions runner, `act`.
 
 Install Devbox using the [official installation guide](https://www.jetify.com/devbox/docs/installing_devbox/), then enter the environment with:
 
@@ -100,6 +101,42 @@ devbox shell
 
 From that shell, use `pnpm` directly or run the supplied shortcuts, such as
 `devbox run test`, `devbox run check`, and `devbox run simulate`.
+
+## Delivery workflow
+
+The repository is intended to use trunk-based development: `main` is a
+protected integration branch, changes arrive through short-lived pull requests,
+and GitHub's merge queue creates and validates the queued merge result before
+it reaches `main`. Configure this policy in GitHub rather than relying on these
+workflow files alone: forbid direct pushes to `main`, require pull requests and
+their validation check, then enable the merge queue.
+
+| Trigger                       | Workflow                                               | Purpose                                                                                           |
+| ----------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Pull request targeting `main` | [`pr.yml`](.github/workflows/pr.yml)                   | Runs checks, tests, Compose validation, image builds, and the critical dependency audit.          |
+| Merge-queue entry             | [`merge-queue.yml`](.github/workflows/merge-queue.yml) | Revalidates the queued merge result and runs the mTLS integration check.                          |
+| Push to `main`                | [`post-merge.yml`](.github/workflows/post-merge.yml)   | Revalidates the immutable main commit and contains a non-mutating staging-deployment placeholder. |
+| Published GitHub release      | [`release.yml`](.github/workflows/release.yml)         | Revalidates the release and contains a non-mutating publish/deploy placeholder.                   |
+
+The shared implementation is [`validate.yml`](.github/workflows/validate.yml).
+The staging and release actions intentionally do not publish or deploy: add
+registry, signing, environment, and deployment details only after those target
+systems are chosen.
+
+To simulate the workflows locally, start Docker Desktop and run:
+
+```sh
+devbox run act:pr
+devbox run act:merge-queue
+devbox run act:main
+devbox run act:release
+devbox run act:mtls
+```
+
+The first run downloads the local runner image. The wrapper defaults to an
+amd64 runner image for Apple Silicon compatibility and mounts Docker Desktop's
+container-compatible socket so workflows can build service images. It is for
+trusted local repository code only.
 
 ## Configure OIDC
 

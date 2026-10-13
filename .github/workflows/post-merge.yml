@@ -1,0 +1,23 @@
+name: Post-merge
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-main:
+    # Revalidate the immutable main commit before a real staging deployment exists.
+    uses: ./.github/workflows/validate.yml
+    with:
+      run_mtls_e2e: true
+
+  staging-placeholder:
+    needs: validate-main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain the production handoff
+        # Deliberately no deployment credentials or external mutation in this demo.
+        run: echo "Validation passed; a production pipeline would publish a signed image and deploy it to staging here."

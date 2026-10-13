@@ -1,0 +1,13 @@
+name: Pull request
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    # Fast required checks for every proposed change to main.
+    uses: ./.github/workflows/validate.yml
