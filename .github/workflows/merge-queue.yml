@@ -8,7 +8,9 @@ permissions:
   contents: read
 
 jobs:
-  validate-merged-result:
+  # Keep this job name aligned with pr.yml so one ruleset-required check is
+  # reported for both pull requests and their prospective merged result.
+  validate:
     # Required when GitHub merge queue is enabled: validates the queued merge SHA.
     uses: ./.github/workflows/validate.yml
     with:
