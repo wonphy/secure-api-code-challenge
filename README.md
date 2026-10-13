@@ -86,20 +86,20 @@ devbox shell
 pnpm install
 ```
 
-### Devbox (optional)
+### Optional: Devbox toolchain
 
-[Devbox](https://www.jetify.com/devbox) provides the project toolchain without
-requiring a global Node.js, pnpm, or Terraform installation. This repository's
-[`devbox.json`](devbox.json) pins Node.js 22, pnpm 10, Terraform, and the
-local GitHub Actions runner, `act`.
+[Devbox](https://www.jetify.com/devbox) is an optional way to use the pinned
+project toolchain without globally installing Node.js, pnpm, Terraform, or the
+local GitHub Actions runner, `act`. The versions are defined in
+[`devbox.json`](devbox.json).
 
-Install Devbox using the [official installation guide](https://www.jetify.com/devbox/docs/installing_devbox/), then enter the environment with:
+Install Devbox using the [official installation guide](https://www.jetify.com/devbox/docs/installing_devbox/), then enter the project environment:
 
 ```sh
 devbox shell
 ```
 
-From that shell, use `pnpm` directly or run the supplied shortcuts, such as
+From that shell, use `pnpm` directly or the supplied shortcuts, including
 `devbox run test`, `devbox run check`, and `devbox run simulate`.
 
 ## Delivery workflow
@@ -183,15 +183,14 @@ environments, the JWKS URL must be HTTPS and `BACKEND_ALLOWED_HOSTS` must
 contain the exact host in `BACKEND_URL`. Never commit `.env` files or access
 tokens.
 
-### Optional: provision the demo API with Auth0 Terraform
+### Optional: provision the Auth0 demo API with Terraform
 
-An existing Auth0 tenant is required and is intentionally created outside this
-repository. The minimal [Auth0 Terraform configuration](infra/auth0/README.md)
+Use this only when you want Terraform to provision the demonstration API in an
+existing Auth0 tenant. The minimal [Auth0 Terraform configuration](infra/auth0/README.md)
 creates an RS256 API/resource server and a native application configured for
-Postman's Authorization Code with PKCE flow. It also provisions the API
-permissions and Support/Operation/Admin roles used by the backend's optional
-permission mode. It does not create users, connections, or tenant-level
-credentials.
+Postman's Authorization Code with PKCE. It also provisions the API permissions
+and Support/Operation/Admin roles used by the backend's optional permissions
+mode. It does not create users, connections, or tenant-level credentials.
 
 Before Terraform can plan or apply, manually create the Auth0 tenant and a
 Machine-to-Machine application authorised for the Auth0 Management API. Export
