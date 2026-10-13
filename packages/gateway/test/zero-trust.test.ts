@@ -153,6 +153,7 @@ describe("zero-trust request flow", () => {
     assert.deepEqual(await missingToken.json(), {
       error: "missing bearer token",
     });
+    assert.equal(missingToken.headers.get("cache-control"), "no-store");
     assert.equal(wrongScheme.status, 401);
     assert.deepEqual(await wrongScheme.json(), {
       error: "missing bearer token",

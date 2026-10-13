@@ -29,6 +29,21 @@ If the gateway receives client IP forwarding headers from the edge, configure
 Express to trust only the known ingress proxy addresses or hop count after the
 gateway is no longer directly reachable. Do not enable unrestricted proxy trust.
 
+### Ingress rollout checklist
+
+Before enabling Express proxy trust:
+
+1. Remove the gateway's public listener so that only the ingress publishes a
+   client-facing port.
+2. Configure the ingress to discard client-provided `X-Forwarded-*` headers
+   and write its own forwarding headers.
+3. Configure Express with the actual trusted ingress CIDRs or a fixed proxy
+   hop count for the deployed topology; never set `trust proxy` to `true`.
+4. Add an integration test proving that a direct request cannot forge the
+   source IP with `X-Forwarded-For`.
+
+Until those conditions are met, keep Express's default proxy-trust setting.
+
 ## Gateway safeguards
 
 `BACKEND_TIMEOUT_MS` bounds a single gateway-to-backend request. It defaults to

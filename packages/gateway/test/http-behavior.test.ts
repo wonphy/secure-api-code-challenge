@@ -51,6 +51,14 @@ describe("gateway HTTP error responses", () => {
 
     assert.equal(response.status, 404);
     assert.deepEqual(await response.json(), { error: "not_found" });
+    assert.equal(response.headers.get("x-powered-by"), null);
+    assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+    assert.equal(response.headers.get("x-frame-options"), "DENY");
+    assert.equal(response.headers.get("referrer-policy"), "no-referrer");
+    assert.equal(
+      response.headers.get("cross-origin-resource-policy"),
+      "same-origin",
+    );
   });
 
   it("returns safe JSON 400 and 500 responses without error details", async () => {

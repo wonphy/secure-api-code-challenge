@@ -12,6 +12,10 @@ import {
 } from "./logging/gateway-logger.js";
 import { createRequestLogger } from "./logging/request-logger.js";
 import { createUsersProxy } from "./proxy/users-proxy.js";
+import {
+  applyGatewayResponseHeaders,
+  applySensitiveApiCachePolicy,
+} from "./security/response-headers.js";
 
 export function createApp(
   configuration: GatewayConfiguration,
@@ -20,6 +24,9 @@ export function createApp(
 ): express.Express {
   const app = express();
 
+  // Do not advertise an implementation detail that provides no client value.
+  app.disable("x-powered-by");
+  app.use(applyGatewayResponseHeaders);
   app.use(createRequestLogger(logger));
 
   app.get("/health", (_request, response) => {
@@ -27,6 +34,7 @@ export function createApp(
   });
 
   // Authentication must run before the proxy can reach the protected backend API.
+  app.use("/api/users", applySensitiveApiCachePolicy);
   app.use(
     "/api/users",
     createAuthenticationMiddleware({
