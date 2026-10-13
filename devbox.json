@@ -17,7 +17,7 @@
       "simulate:down": "docker compose down",
       "simulate:mtls": "sh scripts/setup-local-mtls.sh && docker compose -f compose.yaml -f compose.mtls.yaml up --build --force-recreate --remove-orphans",
       "simulate:mtls:down": "docker compose -f compose.yaml -f compose.mtls.yaml down",
-      "test:mtls-handshake": "sh scripts/test-mtls-handshake-rejection.sh",
+      "bypass:gateway": "sh scripts/bypass-gateway.sh \"$@\"",
       "act": "sh scripts/run-act.sh",
       "act:pr": "sh scripts/run-act.sh pr",
       "act:merge-queue": "sh scripts/run-act.sh merge-queue",
