@@ -70,6 +70,10 @@ packages/
     ├── src/trust/            # Gateway assertion and permission guards
     ├── src/users/            # In-memory CRUD store and routes
     └── test/                 # API and HTTP-behaviour tests
+infra/auth0/                  # Optional Auth0 demo API and role provisioning
+scripts/                      # Local mTLS certificates and GitHub Actions helpers
+compose.yaml                  # Public gateway plus private backend topology
+compose.mtls.yaml             # Optional mTLS overlay for gateway-to-backend traffic
 ```
 
 ## Prerequisites
@@ -217,6 +221,25 @@ remove containers with:
 ```sh
 devbox run simulate:down
 ```
+
+### Optional: gateway-to-backend mTLS
+
+The mTLS overlay generates a local CA and workload certificates in
+`.local/mtls`, then configures the gateway as the backend's only trusted TLS
+client. It is for local demonstration only; do not reuse its generated
+certificates outside this repository.
+
+```sh
+devbox run simulate:mtls
+# In another terminal, after the gateway is ready:
+devbox run test:mtls-handshake
+
+devbox run simulate:mtls:down
+```
+
+The mTLS handshake test connects from the private Docker network with the CA
+but without a client certificate. It must fail before an HTTP request or an
+`X-Verified-User` assertion reaches the backend.
 
 ### Explore local logs
 
@@ -387,7 +410,7 @@ forbidden, and a verified identity is forwarded only after authentication.
 ```sh
 devbox run check          # type-check, lint, and check formatting
 devbox run format         # apply Prettier formatting
-devbox run simulate:mtls  # optional gateway-to-backend mTLS overlay
+devbox run act:mtls       # run the optional mTLS integration workflow locally
 ```
 
 See the service-level documentation for implementation detail:

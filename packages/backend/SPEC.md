@@ -26,8 +26,10 @@ API client -> Gateway -> Backend (private network)
 
 The backend must be private to the gateway. Its header checks are valid only
 when a client cannot open a direct connection and forge gateway assertion
-headers. Network segmentation is mandatory; mutual TLS is recommended for a
-production service-to-service boundary.
+headers. Network segmentation is mandatory. The optional `mtls` transport
+requires a TLS client certificate signed by the configured CA and matching the
+expected gateway common name before the backend evaluates the assertion
+headers.
 
 ## Gateway assertion contract
 
@@ -44,6 +46,11 @@ By default (`AUTHORIZATION_MODE=identity-only`), that assertion is sufficient,
 as required by the challenge. In opt-in `permissions` mode, malformed, absent,
 or insufficient permissions fail closed with `403`. It does not parse, retain,
 or validate an `Authorization` bearer token.
+
+When `BACKEND_TLS_MODE=mtls`, an unauthenticated TLS peer is rejected during
+the handshake. A peer that reaches HTTP without a valid gateway certificate is
+rejected with `403 trusted_gateway_required` before assertion or permission
+middleware runs.
 
 ## Authorization contract
 
@@ -85,6 +92,7 @@ not a persistent datastore design.
 | Scenario                                                    | Response                         |
 | ----------------------------------------------------------- | -------------------------------- |
 | Health probe                                                | `200` JSON service status        |
+| Readiness probe                                             | `200` ready or `503` not ready   |
 | Successful create                                           | `201` JSON user                  |
 | Successful delete                                           | `204` with no body               |
 | Invalid JSON or invalid user input                          | `400` JSON error                 |
@@ -113,15 +121,21 @@ levels are configured by `LOG_LEVEL`: `debug`, `info`, `warn`, or `error`.
 
 ## Configuration contract
 
-| Variable             | Requirement                                           |
-| -------------------- | ----------------------------------------------------- |
-| `PORT`               | Integer from `0` through `65535`; defaults to `3001`. |
-| `LOG_LEVEL`          | One of the supported levels; defaults to `info`.      |
-| `AUTHORIZATION_MODE` | `identity-only` (default) or opt-in `permissions`.    |
+| Variable                 | Requirement                                           |
+| ------------------------ | ----------------------------------------------------- |
+| `PORT`                   | Integer from `0` through `65535`; defaults to `3001`. |
+| `LOG_LEVEL`              | One of the supported levels; defaults to `info`.      |
+| `AUTHORIZATION_MODE`     | `identity-only` (default) or opt-in `permissions`.    |
+| `BACKEND_TLS_MODE`       | `http` (default) or `mtls`.                           |
+| `TLS_CA_CERT_PATH`       | Required CA certificate path in `mtls` mode.          |
+| `TLS_SERVER_CERT_PATH`   | Required server certificate path in `mtls` mode.      |
+| `TLS_SERVER_KEY_PATH`    | Required server private-key path in `mtls` mode.      |
+| `TLS_EXPECTED_CLIENT_CN` | Expected client common name; defaults to `gateway`.   |
 
 ## Review checklist
 
 - [ ] The backend is network-private and only accepts traffic from the gateway.
+- [ ] When enabled, mTLS rejects callers that lack the expected gateway client certificate.
 - [ ] The gateway strips caller identity/permission headers before injecting its assertions.
 - [ ] The backend has no JWT validation code or OIDC dependency.
 - [ ] Every protected route requires a verified identity assertion.

@@ -10,10 +10,13 @@ It does not make domain authorization decisions. The backend determines whether 
 
 ```
 API client -> Gateway -> Backend (private network)
-              validates JWT    receives X-Verified-User only
+              validates JWT    receives verified user and permissions assertions
 ```
 
-The backend must not be publicly reachable. A direct backend request without `X-Verified-User` must be rejected.
+The backend must not be publicly reachable. A direct backend request without
+`X-Verified-User` must be rejected. When the optional mTLS transport is
+enabled, the backend also requires a TLS client certificate for the configured
+gateway identity before it evaluates HTTP headers.
 
 ## Security principles
 
@@ -22,7 +25,10 @@ The backend must not be publicly reachable. A direct backend request without `X-
 - Validate JWT signature, expiry, issuer, and audience using the configured OIDC JWKS.
 - Retrieve the JWKS before listening for traffic; fail startup if it is unavailable or configuration is incomplete.
 - Derive the backend identity assertion exclusively from the verified token `sub` claim.
-- Remove the caller's `Authorization` and `X-Verified-User` headers before proxying.
+- Remove the caller's `Authorization`, `X-Verified-User`, and
+  `X-Verified-User-Permissions` headers before proxying.
+- Inject the verified `sub` and the verified permissions array as backend
+  assertions only after token validation succeeds.
 - Do not log bearer tokens, JWT claims, request query values, credentials, or raw error messages.
 - Replace backend `5xx` response bodies with the gateway's safe `500` response. Backend `4xx` responses, including authorization decisions, are proxied unchanged.
 
@@ -74,6 +80,9 @@ Client responses must never contain stack traces or raw internal error messages.
 - `JWT_JWKS_URL` must use HTTPS outside development, and `JWT_ALLOWED_ALGORITHMS` defaults to `RS256` from a validated asymmetric allowlist.
 - `DEV_GATEWAY_TOKEN` and `DEV_GATEWAY_USER` apply only in development.
 - `BACKEND_URL` must use HTTP(S), contain no embedded credentials, and exactly match a hostname in `BACKEND_ALLOWED_HOSTS` outside development.
+- `BACKEND_TLS_MODE=http` requires an HTTP backend URL. `BACKEND_TLS_MODE=mtls`
+  requires an HTTPS backend URL plus `TLS_CA_CERT_PATH`,
+  `TLS_CLIENT_CERT_PATH`, and `TLS_CLIENT_KEY_PATH`.
 - `LOG_LEVEL` must be one of the supported values.
 
 ## Review checklist
@@ -81,7 +90,10 @@ Client responses must never contain stack traces or raw internal error messages.
 - [ ] Protected routes authenticate before reaching the proxy.
 - [ ] The gateway removes client-supplied identity and authorization headers before proxying.
 - [ ] Only a verified `sub` is placed in `X-Verified-User`.
+- [ ] Only verified token permissions are placed in `X-Verified-User-Permissions`.
 - [ ] The backend is network-private and rejects requests without `X-Verified-User`.
+- [ ] When enabled, mTLS authenticates the gateway workload before the backend
+      accepts its assertions.
 - [ ] JWT verification checks signature, expiry, issuer, and audience.
 - [ ] JWKS preload fails startup when the identity provider is unavailable.
 - [ ] Request logs include required fields and no query string or token data.

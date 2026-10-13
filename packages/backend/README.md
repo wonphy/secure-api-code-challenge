@@ -9,7 +9,8 @@ contracts.
 
 ## Responsibilities
 
-- Serves the `/api/users` CRUD API and `/health` probe.
+- Serves the `/api/users` CRUD API plus unauthenticated `/health` and `/ready`
+  probes.
 - Trusts the gateway's `X-Verified-User` identity assertion; it does **not**
   validate JWTs.
 - Requires a gateway-injected `X-Verified-User` assertion. Optional
@@ -19,17 +20,27 @@ contracts.
   store.
 - Emits JSON structured request and error logs without user data, identity
   assertions, request bodies, permission payloads, or query values.
+- Optionally requires a mutual-TLS client certificate with the expected gateway
+  common name before it evaluates any API assertion headers.
 
 The service must be private to the gateway in deployment. A header alone is
 not proof of identity if a client can reach the backend directly.
 
 ## Configuration
 
-| Variable             | Default         | Description                                                        |
-| -------------------- | --------------- | ------------------------------------------------------------------ |
-| `PORT`               | `3001`          | HTTP listening port.                                               |
-| `LOG_LEVEL`          | `info`          | Minimum structured log level: `debug`, `info`, `warn`, or `error`. |
-| `AUTHORIZATION_MODE` | `identity-only` | `identity-only` or opt-in `permissions` authorization.             |
+| Variable                 | Default         | Description                                                        |
+| ------------------------ | --------------- | ------------------------------------------------------------------ |
+| `PORT`                   | `3001`          | HTTP listening port.                                               |
+| `LOG_LEVEL`              | `info`          | Minimum structured log level: `debug`, `info`, `warn`, or `error`. |
+| `AUTHORIZATION_MODE`     | `identity-only` | `identity-only` or opt-in `permissions` authorization.             |
+| `BACKEND_TLS_MODE`       | `http`          | `http`, or `mtls` to require a gateway client certificate.         |
+| `TLS_CA_CERT_PATH`       | —               | CA certificate path; required for `mtls`.                          |
+| `TLS_SERVER_CERT_PATH`   | —               | Backend server certificate path; required for `mtls`.              |
+| `TLS_SERVER_KEY_PATH`    | —               | Backend server private-key path; required for `mtls`.              |
+| `TLS_EXPECTED_CLIENT_CN` | `gateway`       | Required gateway client-certificate common name in `mtls` mode.    |
+
+`BACKEND_TLS_MODE=mtls` requires all three TLS file paths. The Compose mTLS
+overlay supplies these values and changes the backend listener to HTTPS.
 
 ## API and authorization
 
@@ -56,13 +67,24 @@ in-memory only, so it is reset when the service restarts.
 
 ```text
 src/
-├── app.ts                    # Express application composition
-├── server.ts                 # Configuration loading and listener startup
-├── config/                   # Environment validation
-├── errors/                   # Safe JSON error responses
-├── logging/                  # Structured logger and request logging
-├── trust/                    # Gateway identity and permission assertions
-└── users/                    # User model, validation, storage, and routes
+├── app.ts                      # Express route and middleware composition
+├── server.ts                   # Startup, configuration loading, and listener
+├── config/
+│   └── environment.ts           # Environment validation and configuration model
+├── errors/
+│   └── http-errors.ts           # Safe JSON error and unknown-route responses
+├── logging/
+│   ├── backend-logger.ts        # Structured logger and log filtering
+│   └── request-logger.ts        # Request-completion logging
+├── trust/
+│   ├── mutual-tls.ts            # Expected gateway client-certificate guard
+│   ├── permission-middleware.ts # Optional route permission enforcement
+│   └── verified-user.ts         # Gateway identity-assertion guard
+└── users/
+    ├── user-store.ts            # In-memory user and normalized-email indexes
+    ├── user-validation.ts       # Request validation and normalization
+    ├── user.ts                  # User data model
+    └── users-router.ts          # CRUD routes and authorization composition
 ```
 
 The root README contains development, deployment, and test instructions.
