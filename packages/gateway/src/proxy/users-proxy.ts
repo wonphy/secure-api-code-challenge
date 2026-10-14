@@ -8,6 +8,10 @@ import {
 } from "node:http";
 import type { Socket } from "node:net";
 import { createProxyMiddleware } from "http-proxy-middleware";
+import {
+  VERIFIED_USER_HEADER,
+  VERIFIED_USER_PERMISSIONS_HEADER,
+} from "@secure-api/contracts/gateway-assertions";
 import type { GatewayLogger } from "../logging/gateway-logger.js";
 import type { BackendMutualTlsConfiguration } from "../config/environment.js";
 
@@ -76,8 +80,8 @@ export function createUsersProxy(
 
         // Make these headers gateway assertions: discard caller credentials and spoofed values.
         proxyRequest.removeHeader("authorization");
-        proxyRequest.removeHeader("x-verified-user");
-        proxyRequest.removeHeader("x-verified-user-permissions");
+        proxyRequest.removeHeader(VERIFIED_USER_HEADER);
+        proxyRequest.removeHeader(VERIFIED_USER_PERMISSIONS_HEADER);
 
         if (!verifiedUser) {
           proxyRequest.destroy(
@@ -86,9 +90,9 @@ export function createUsersProxy(
           return;
         }
 
-        proxyRequest.setHeader("x-verified-user", verifiedUser);
+        proxyRequest.setHeader(VERIFIED_USER_HEADER, verifiedUser);
         proxyRequest.setHeader(
-          "x-verified-user-permissions",
+          VERIFIED_USER_PERMISSIONS_HEADER,
           JSON.stringify(verifiedUserPermissions),
         );
       },

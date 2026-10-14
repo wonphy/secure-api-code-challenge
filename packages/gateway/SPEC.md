@@ -29,6 +29,9 @@ gateway identity before it evaluates HTTP headers.
   `X-Verified-User-Permissions` headers before proxying.
 - Inject the verified `sub` and the verified permissions array as backend
   assertions only after token validation succeeds.
+- Use the canonical assertion-header constants from
+  `@secure-api/contracts/gateway-assertions`; HTTP header matching remains
+  case-insensitive.
 - Do not log bearer tokens, JWT claims, request query values, credentials, or raw error messages.
 - Replace backend `5xx` response bodies with the gateway's safe `500` response. Backend `4xx` responses, including authorization decisions, are proxied unchanged.
 

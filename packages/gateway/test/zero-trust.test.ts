@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { createServer, type Server } from "node:http";
 import { afterEach, describe, it } from "node:test";
+import {
+  VERIFIED_USER_HEADER,
+  VERIFIED_USER_PERMISSIONS_HEADER,
+} from "@secure-api/contracts/gateway-assertions";
 import { errors, exportJWK, generateKeyPair, SignJWT } from "jose";
 import { createApp } from "../src/app.js";
 import {
@@ -63,7 +67,10 @@ describe("zero-trust request flow", () => {
         assert.equal(request.method, "POST");
         assert.equal(request.url, "/api/users");
         assert.equal(request.headers.authorization, undefined);
-        assert.equal(request.headers["x-verified-user"], "oidc-user-123");
+        assert.equal(
+          request.headers[VERIFIED_USER_HEADER.toLowerCase()],
+          "oidc-user-123",
+        );
         request.on("data", (chunk: Buffer) => {
           receivedBody += chunk.toString();
         });
@@ -373,8 +380,8 @@ describe("zero-trust request flow", () => {
       response = await fetch(`${gateway}/api/users`, {
         headers: {
           authorization: "Bearer user-access-token",
-          "x-verified-user": "attacker-controlled-value",
-          "x-verified-user-permissions": '["attacker:admin"]',
+          [VERIFIED_USER_HEADER]: "attacker-controlled-value",
+          [VERIFIED_USER_PERMISSIONS_HEADER]: '["attacker:admin"]',
         },
       });
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -384,9 +391,12 @@ describe("zero-trust request flow", () => {
 
     assert.equal(response.status, 200);
     assert.equal(receivedHeaders?.authorization, undefined);
-    assert.equal(receivedHeaders?.["x-verified-user"], "verified-user-123");
     assert.equal(
-      receivedHeaders?.["x-verified-user-permissions"],
+      receivedHeaders?.[VERIFIED_USER_HEADER.toLowerCase()],
+      "verified-user-123",
+    );
+    assert.equal(
+      receivedHeaders?.[VERIFIED_USER_PERMISSIONS_HEADER.toLowerCase()],
       '["users:read","users:write"]',
     );
     const requestLog = logLines

@@ -9,6 +9,10 @@ import {
   jest,
 } from "@jest/globals";
 import {
+  VERIFIED_USER_HEADER,
+  VERIFIED_USER_PERMISSIONS_HEADER,
+} from "@secure-api/contracts/gateway-assertions";
+import {
   ZeroTrustHarness,
   type FlowEndpoints,
 } from "./helpers/zero-trust-harness.js";
@@ -47,8 +51,8 @@ describe("zero-trust integration flow", () => {
       headers: {
         authorization: `Bearer ${await harness.createAccessToken()}`,
         "content-type": "application/json",
-        "x-verified-user": "attacker-controlled-user",
-        "x-verified-user-permissions": '["admin"]',
+        [VERIFIED_USER_HEADER]: "attacker-controlled-user",
+        [VERIFIED_USER_PERMISSIONS_HEADER]: '["admin"]',
       },
       body: JSON.stringify({ name: "Ada Lovelace", email: "ada@example.test" }),
     });
@@ -61,10 +65,12 @@ describe("zero-trust integration flow", () => {
     const forwardedRequest = backendRequestSpy.mock.calls[0][0];
     // The gateway removes caller credentials and injects its verified assertion.
     expect(forwardedRequest.headers.authorization).toBeUndefined();
-    expect(forwardedRequest.headers["x-verified-user"]).toBe(
+    expect(forwardedRequest.headers[VERIFIED_USER_HEADER.toLowerCase()]).toBe(
       "integration-user-123",
     );
-    expect(forwardedRequest.headers["x-verified-user-permissions"]).toBe("[]");
+    expect(
+      forwardedRequest.headers[VERIFIED_USER_PERMISSIONS_HEADER.toLowerCase()],
+    ).toBe("[]");
 
     const secondResponse = await fetch(`${flow.gatewayUrl}/api/users`, {
       headers: { authorization: `Bearer ${await harness.createAccessToken()}` },
