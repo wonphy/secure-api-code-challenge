@@ -47,6 +47,10 @@ as required by the challenge. In opt-in `permissions` mode, malformed, absent,
 or insufficient permissions fail closed with `403`. It does not parse, retain,
 or validate an `Authorization` bearer token.
 
+The canonical header-name constants are defined in
+`@secure-api/contracts/gateway-assertions` and are consumed by both services
+and their tests. HTTP header matching remains case-insensitive.
+
 When `BACKEND_TLS_MODE=mtls`, an unauthenticated TLS peer is rejected during
 the handshake. A peer that reaches HTTP without a valid gateway certificate is
 rejected with `403 trusted_gateway_required` before assertion or permission

@@ -11,6 +11,9 @@ importers:
 
   .:
     devDependencies:
+      '@secure-api/contracts':
+        specifier: workspace:*
+        version: link:packages/contracts
       '@eslint/js':
         specifier: ^9.35.0
         version: 9.39.5
@@ -59,12 +62,18 @@ importers:
 
   packages/backend:
     dependencies:
+      '@secure-api/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       express:
         specifier: ^5.1.0
         version: 5.2.1
 
   packages/gateway:
     dependencies:
+      '@secure-api/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       express:
         specifier: ^5.1.0
         version: 5.2.1
@@ -74,6 +83,8 @@ importers:
       jose:
         specifier: ^6.1.0
         version: 6.2.12
+
+  packages/contracts: {}
 
 packages:
 

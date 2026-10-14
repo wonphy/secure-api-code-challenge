@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { createServer, type Server } from "node:http";
 import { afterEach, describe, it } from "node:test";
 import express from "express";
+import {
+  VERIFIED_USER_HEADER,
+  VERIFIED_USER_PERMISSIONS_HEADER,
+} from "@secure-api/contracts/gateway-assertions";
 import { createApp } from "../src/app.js";
 import type { BackendConfiguration } from "../src/config/environment.js";
 import { createBackendErrorHandler } from "../src/errors/http-errors.js";
@@ -72,8 +76,8 @@ describe("backend HTTP behavior", () => {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-verified-user": "gateway-verified-user",
-        "x-verified-user-permissions": JSON.stringify(["create:user"]),
+        [VERIFIED_USER_HEADER]: "gateway-verified-user",
+        [VERIFIED_USER_PERMISSIONS_HEADER]: JSON.stringify(["create:user"]),
       },
       body: "{",
     });
@@ -101,8 +105,8 @@ describe("backend HTTP behavior", () => {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-verified-user": "ada@example.test",
-        "x-verified-user-permissions": JSON.stringify(["create:user"]),
+        [VERIFIED_USER_HEADER]: "ada@example.test",
+        [VERIFIED_USER_PERMISSIONS_HEADER]: JSON.stringify(["create:user"]),
       },
       body: JSON.stringify({ name: "Ada Lovelace", email: "ada@example.test" }),
     });
