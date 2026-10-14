@@ -1,4 +1,5 @@
 import type express from "express";
+import { VERIFIED_USER_PERMISSIONS_HEADER } from "@secure-api/contracts/gateway-assertions";
 import type { AuthorizationMode } from "../config/environment.js";
 
 function parsePermissions(
@@ -44,7 +45,7 @@ export function requirePermission(
     next: express.NextFunction,
   ): void => {
     const permissions = parsePermissions(
-      request.header("x-verified-user-permissions"),
+      request.header(VERIFIED_USER_PERMISSIONS_HEADER),
     );
     if (!permissions?.has(permission)) {
       response.status(403).json({ error: "insufficient_permissions" });
