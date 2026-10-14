@@ -4,7 +4,6 @@ WORKDIR /workspace
 COPY . .
 RUN corepack enable \
   && pnpm install --frozen-lockfile \
-  && pnpm --filter @secure-api/contracts run build \
   && pnpm --filter @secure-api/gateway run build \
   && pnpm --filter @secure-api/gateway deploy --legacy --prod /opt/service
 

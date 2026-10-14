@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 import { createServer, type Server } from "node:http";
 import { afterEach, describe, it } from "node:test";
-import {
-  VERIFIED_USER_HEADER,
-  VERIFIED_USER_PERMISSIONS_HEADER,
-} from "@secure-api/contracts/gateway-assertions";
 import { createApp } from "../src/app.js";
 import type { BackendConfiguration } from "../src/config/environment.js";
 
@@ -31,8 +27,8 @@ const contentTypeHeader = { "content-type": "application/json" };
 
 function permissionHeaders(...permissions: string[]): Record<string, string> {
   return {
-    [VERIFIED_USER_HEADER]: "gateway-verified-user",
-    [VERIFIED_USER_PERMISSIONS_HEADER]: JSON.stringify(permissions),
+    "x-verified-user": "gateway-verified-user",
+    "x-verified-user-permissions": JSON.stringify(permissions),
   };
 }
 
@@ -102,7 +98,7 @@ describe("users API", () => {
     const backend = await startBackend(mutualTlsConfiguration);
 
     const response = await fetch(`${backend}/api/users`, {
-      headers: { [VERIFIED_USER_HEADER]: "attacker-controlled-value" },
+      headers: { "x-verified-user": "attacker-controlled-value" },
     });
 
     assert.equal(response.status, 403);
@@ -154,8 +150,8 @@ describe("users API", () => {
     const backend = await startBackend(permissionsConfiguration);
     const malformedPermissions = await fetch(`${backend}/api/users`, {
       headers: {
-        [VERIFIED_USER_HEADER]: "gateway-verified-user",
-        [VERIFIED_USER_PERMISSIONS_HEADER]: "not-json",
+        "x-verified-user": "gateway-verified-user",
+        "x-verified-user-permissions": "not-json",
       },
     });
     assert.equal(malformedPermissions.status, 403);
@@ -185,7 +181,7 @@ describe("users API", () => {
     const backend = await startBackend();
 
     const response = await fetch(`${backend}/api/users`, {
-      headers: { [VERIFIED_USER_HEADER]: "gateway-verified-user" },
+      headers: { "x-verified-user": "gateway-verified-user" },
     });
 
     assert.equal(response.status, 200);
@@ -199,7 +195,7 @@ describe("users API", () => {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        [VERIFIED_USER_HEADER]: "gateway-verified-user",
+        "x-verified-user": "gateway-verified-user",
       },
       body: JSON.stringify({ name: "Ada Lovelace", email: "ada@example.test" }),
     });

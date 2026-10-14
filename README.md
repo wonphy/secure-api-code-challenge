@@ -62,7 +62,6 @@ reach the backend and supply its own identity header.
 
 ```text
 packages/
-├── contracts/               # Shared gateway-to-backend assertion names
 ├── gateway/                 # Express reverse proxy, OIDC verifier, JSON logging
 │   ├── src/auth/             # Bearer extraction, JWT/JWKS verification
 │   ├── src/proxy/            # Header boundary and users proxy
